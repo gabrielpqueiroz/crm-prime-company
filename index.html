@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --coffee-900:#241813;
@@ -245,6 +246,17 @@ tbody tr:hover{background:var(--paper)}
 .tl-item::before{content:"";position:absolute;left:-19px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px var(--paper)}
 .tl-item .tl-txt{font-size:13.5px}
 .tl-item .tl-time{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+.files-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.file-item{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;transition:.12s}
+.file-item:hover{border-color:var(--gold);background:var(--cream)}
+.file-ic{font-size:21px;flex-shrink:0}
+.file-meta{flex:1;min-width:0}
+.file-name{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-sub{font-size:11.5px;color:var(--ink-soft)}
+.file-del{width:27px;height:27px;border-radius:7px;color:var(--ink-soft);font-size:18px;flex-shrink:0;line-height:1}
+.file-del:hover{background:var(--red-bg);color:var(--red)}
+.file-add{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--line);border-radius:10px;padding:11px;font-size:13px;font-weight:600;color:var(--coffee-700);cursor:pointer;transition:.12s}
+.file-add:hover{border-color:var(--gold);background:var(--cream)}
 .empty{text-align:center;padding:60px 20px;color:var(--ink-soft)}
 .empty .e-ic{font-size:44px;opacity:.4;margin-bottom:10px}
 .empty .e-t{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--ink);font-weight:600}
@@ -274,9 +286,11 @@ tbody tr:hover{background:var(--paper)}
 .cal-nav button{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--coffee-700);line-height:1}
 .cal-nav button:hover{background:var(--paper-2)}
 .cal-title{font-family:'Cormorant Garamond',serif;font-size:25px;font-weight:700;text-transform:capitalize;min-width:140px}
-.seg{display:flex;background:var(--paper-2);border-radius:11px;padding:3px;margin-left:auto}
+.cal-right{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.seg{display:flex;background:var(--paper-2);border-radius:11px;padding:3px}
 .seg button{padding:8px 18px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-soft)}
 .seg button.on{background:#fff;color:var(--coffee-700);box-shadow:var(--shadow)}
+.gcal-badge{font-size:12px;font-weight:600;color:#2d5a9e;background:#e7eef9;border:1px solid #c7d8f0;padding:5px 11px;border-radius:20px;white-space:nowrap}
 .month{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
 .month-dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--paper);border-bottom:1px solid var(--line)}
 .month-dow div{padding:10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}
@@ -293,6 +307,7 @@ tbody tr:hover{background:var(--paper)}
 .ev.meet{background:var(--coffee-700);color:#fff}
 .ev.meet:hover{background:var(--coffee-600)}
 .ev.fu{background:var(--green-bg);color:#3f6b40;border:1px solid #cfe0cd}
+.ev.gcal{background:#e7eef9;color:#2d5a9e;border:1px solid #c7d8f0}
 .ev-more{font-size:10.5px;color:var(--ink-soft);font-weight:700;padding-left:4px}
 .week{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
 .week-head{display:grid;grid-template-columns:56px repeat(7,1fr)}
@@ -316,6 +331,8 @@ tbody tr:hover{background:var(--paper)}
 .meet-block:hover{background:var(--coffee-600)}
 .meet-block .mb-time{font-size:9.5px;opacity:.85;line-height:1.2}
 .meet-block .mb-name{font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meet-block.gcal{background:#3b6fb0;border-left-color:#21487f}
+.meet-block.gcal:hover{background:#33619c}
 @media(max-width:1080px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.agenda-grid{grid-template-columns:1fr}.form-grid,.detail-grid{grid-template-columns:1fr}}
 @media(max-width:780px){.sidebar{display:none}}
 ::-webkit-scrollbar{width:9px;height:9px}
@@ -460,6 +477,93 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const CONFIGURED = !SUPABASE_URL.includes('__SUPABASE');
 let sb = CONFIGURED ? supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
 
+/* ===================== GOOGLE CALENDAR CONFIG ===================== */
+const GOOGLE_CLIENT_ID='154290439727-gn3v2ll1rejp04eupmt4pb5tqo4er3rn.apps.googleusercontent.com';
+const GCAL_CONFIGURED=!GOOGLE_CLIENT_ID.includes('__GOOGLE');
+const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events.readonly';
+let gcal={token:null,exp:0,events:[],cacheStart:null,cacheEnd:null,fetching:false};
+let gcalTokenClient=null;
+function gcalLinked(){return localStorage.getItem('gcalLinked')==='1'}
+function gcalInitClient(){
+  if(gcalTokenClient||!window.google||!google.accounts)return;
+  gcalTokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:GCAL_SCOPE,callback:()=>{}});
+}
+function gcalRequestToken(interactive){
+  return new Promise(resolve=>{
+    if(!gcalTokenClient){resolve(null);return}
+    gcalTokenClient.callback=resp=>{
+      if(resp&&resp.access_token){
+        gcal.token=resp.access_token;
+        gcal.exp=Date.now()+((resp.expires_in||3600)*1000)-60000;
+        resolve(gcal.token);
+      }else resolve(null);
+    };
+    try{gcalTokenClient.requestAccessToken({prompt:interactive?'consent':''})}catch(e){resolve(null)}
+  });
+}
+async function gcalToken(){
+  if(gcal.token&&Date.now()<gcal.exp)return gcal.token;
+  return await gcalRequestToken(false);
+}
+async function gcalDoFetch(timeMin,timeMax){
+  const tok=await gcalToken();
+  if(!tok)return false;
+  const qs=new URLSearchParams({timeMin:timeMin.toISOString(),timeMax:timeMax.toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'250'});
+  let r;try{r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?'+qs,{headers:{Authorization:'Bearer '+tok}})}catch(e){return false}
+  if(!r.ok){if(r.status===401){gcal.token=null}return false}
+  const data=await r.json();
+  gcal.events=(data.items||[]).map(e=>{
+    const allDay=!e.start.dateTime;
+    return {summary:e.summary||'(sem título)',htmlLink:e.htmlLink,allDay,
+      start:new Date(e.start.dateTime||(e.start.date+'T00:00')),
+      end:new Date(e.end.dateTime||(e.end.date+'T00:00'))};
+  });
+  return true;
+}
+async function gcalEnsure(){
+  if(!GCAL_CONFIGURED||!gcalLinked()||gcal.fetching)return;
+  const start=new Date(agendaRef);start.setDate(start.getDate()-45);
+  const end=new Date(agendaRef);end.setDate(end.getDate()+45);
+  if(gcal.cacheStart&&start>=gcal.cacheStart&&end<=gcal.cacheEnd)return;
+  gcal.fetching=true;
+  const ok=await gcalDoFetch(start,end);
+  gcal.fetching=false;
+  if(ok){gcal.cacheStart=start;gcal.cacheEnd=end;if(currentView==='agenda')render()}
+}
+async function gcalConnect(){
+  if(!GCAL_CONFIGURED){toast('Google Client ID não configurado',true);return}
+  gcalInitClient();
+  if(!gcalTokenClient){toast('Carregando Google... tente de novo em 2s',true);return}
+  const tok=await gcalRequestToken(true);
+  if(!tok){toast('Não foi possível conectar ao Google',true);return}
+  localStorage.setItem('gcalLinked','1');
+  gcal.cacheStart=null;
+  await gcalEnsure();render();toast('Google Calendar conectado ✓');
+}
+function gcalDisconnect(){
+  if(gcal.token&&window.google&&google.accounts)try{google.accounts.oauth2.revoke(gcal.token,()=>{})}catch(e){}
+  gcal={token:null,exp:0,events:[],cacheStart:null,cacheEnd:null,fetching:false};
+  localStorage.removeItem('gcalLinked');render();toast('Google Calendar desconectado');
+}
+function gcalBootstrap(){
+  if(!GCAL_CONFIGURED||!gcalLinked())return;
+  let tries=0;const iv=setInterval(()=>{
+    if(window.google&&google.accounts){clearInterval(iv);gcalInitClient();gcalEnsure()}
+    else if(++tries>50)clearInterval(iv);
+  },150);
+}
+function gcalControl(){
+  if(!GCAL_CONFIGURED)return '';
+  if(gcalLinked())return `<span class="gcal-badge">●&nbsp;Google conectado</span><button class="btn ghost sm" onclick="gcalConnect()" title="Atualizar eventos">↻</button><button class="btn ghost sm" onclick="gcalDisconnect()">Desconectar</button>`;
+  return `<button class="btn ghost sm" onclick="gcalConnect()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Conectar Google Calendar</button>`;
+}
+function gcalTimed(){return gcal.events.filter(g=>!g.allDay).map(g=>({type:'gcal',start:g.start,end:g.end,title:g.summary,link:g.htmlLink}))}
+function gcalAllDayFor(iso){
+  const out=[];
+  gcal.events.filter(g=>g.allDay).forEach(g=>{let d=new Date(g.start);const e=new Date(g.end);while(d<e){if(localYMD(d)===iso)out.push(g);d.setDate(d.getDate()+1)}});
+  return out;
+}
+
 /* ===================== CONSTANTS ===================== */
 const STAGES = [
   {id:'novo',     name:'Novo Lead',         color:'#7159a0'},
@@ -525,6 +629,7 @@ async function onLogin(session){
   document.getElementById('boot').classList.add('hide');
   render();
   subscribeRealtime();
+  gcalBootstrap();
 }
 async function logout(){
   await sb.auth.signOut();
@@ -535,7 +640,7 @@ async function logout(){
 async function loadLeads(){
   const {data,error}=await sb.from('leads').select('*').order('updated_at',{ascending:false});
   if(error){toast('Erro ao carregar: '+error.message,true);return}
-  state.leads=(data||[]).map(l=>({...l,activity:Array.isArray(l.activity)?l.activity:[]}));
+  state.leads=(data||[]).map(l=>({...l,activity:Array.isArray(l.activity)?l.activity:[],files:Array.isArray(l.files)?l.files:[]}));
 }
 let reloadTimer=null;
 function subscribeRealtime(){
@@ -549,7 +654,7 @@ function subscribeRealtime(){
 async function dbInsert(row){
   const {data,error}=await sb.from('leads').insert(row).select().single();
   if(error){toast('Erro ao salvar: '+error.message,true);return null}
-  return {...data,activity:Array.isArray(data.activity)?data.activity:[]};
+  return {...data,activity:Array.isArray(data.activity)?data.activity:[],files:Array.isArray(data.files)?data.files:[]};
 }
 async function dbUpdate(id,patch){
   const {error}=await sb.from('leads').update(patch).eq('id',id);
@@ -701,6 +806,7 @@ function cardHTML(l){
       ${l.valor?`<span class="chip val">${money(l.valor)}</span>`:''}
       <span class="chip src">${esc(l.origem||'')}</span>
       ${l.servico?`<span class="chip">${esc(l.servico)}</span>`:''}
+      ${l.files&&l.files.length?`<span class="chip">📎 ${l.files.length}</span>`:''}
     </div>
     ${fuTxt?`<div class="lc-foot">${fuTxt}</div>`:''}
   </div>`;
@@ -794,11 +900,12 @@ function viewAgenda(){
     const ws=weekStart(agendaRef);const we=new Date(ws);we.setDate(we.getDate()+6);const mo=d=>d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','');
     title=`${ws.getDate()} ${mo(ws)} – ${we.getDate()} ${mo(we)} ${we.getFullYear()}`;
   }
+  gcalEnsure();
   const toolbar=`<div class="cal-toolbar">
     <div class="cal-nav"><button onclick="agendaNav(-1)" title="Anterior">‹</button><button onclick="agendaNav(1)" title="Próximo">›</button></div>
     <button class="btn ghost sm" onclick="agendaToday()">Hoje</button>
     <div class="cal-title">${title}</div>
-    <div class="seg"><button class="${agendaMode==='mes'?'on':''}" onclick="agendaSetMode('mes')">Mês</button><button class="${agendaMode==='semana'?'on':''}" onclick="agendaSetMode('semana')">Semana</button></div>
+    <div class="cal-right">${gcalControl()}<div class="seg"><button class="${agendaMode==='mes'?'on':''}" onclick="agendaSetMode('mes')">Mês</button><button class="${agendaMode==='semana'?'on':''}" onclick="agendaSetMode('semana')">Semana</button></div></div>
   </div>`;
   return toolbar + (agendaMode==='mes'?monthGrid():weekGrid()) + pendingFollowups();
 }
@@ -806,17 +913,21 @@ function viewAgenda(){
 function monthGrid(){
   const ref=agendaRef;
   const start=weekStart(new Date(ref.getFullYear(),ref.getMonth(),1));
-  const meets=meetingsAll(),fus=followupsAll(),todayY=localYMD(new Date());
+  const meets=meetingsAll(),fus=followupsAll(),gts=gcalTimed(),todayY=localYMD(new Date());
   let cells='';
   for(let i=0;i<42;i++){
     const d=new Date(start);d.setDate(start.getDate()+i);const iso=localYMD(d);
     const out=d.getMonth()!==ref.getMonth();
     const dm=meets.filter(m=>localYMD(m.start)===iso).sort((a,b)=>a.start-b.start);
+    const dg=gts.filter(g=>localYMD(g.start)===iso).sort((a,b)=>a.start-b.start);
     const df=fus.filter(l=>l.followup===iso);
+    const dga=gcalAllDayFor(iso);
     const evs=[];
-    dm.slice(0,3).forEach(m=>evs.push(`<div class="ev meet" onclick="event.stopPropagation();openDetail('${m.l.id}')" title="${esc(m.l.nome)}${m.l.empresa?' · '+esc(m.l.empresa):''}">${m.start.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} ${esc(m.l.nome)}</div>`));
-    df.slice(0,2).forEach(l=>evs.push(`<div class="ev fu" onclick="event.stopPropagation();openDetail('${l.id}')" title="Follow-up: ${esc(l.nome)}">⚑ ${esc(l.nome)}</div>`));
-    const extra=(dm.length+df.length)-evs.length;
+    dm.slice(0,2).forEach(m=>evs.push(`<div class="ev meet" onclick="event.stopPropagation();openDetail('${m.l.id}')" title="${esc(m.l.nome)}${m.l.empresa?' · '+esc(m.l.empresa):''}">${m.start.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} ${esc(m.l.nome)}</div>`));
+    dg.slice(0,2).forEach(g=>evs.push(`<div class="ev gcal" onclick="event.stopPropagation();window.open('${g.link}','_blank')" title="Google: ${esc(g.title)}">${g.start.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} ${esc(g.title)}</div>`));
+    dga.slice(0,1).forEach(g=>evs.push(`<div class="ev gcal" onclick="event.stopPropagation();window.open('${g.htmlLink}','_blank')" title="Google: ${esc(g.summary)}">${esc(g.summary)}</div>`));
+    df.slice(0,1).forEach(l=>evs.push(`<div class="ev fu" onclick="event.stopPropagation();openDetail('${l.id}')" title="Follow-up: ${esc(l.nome)}">⚑ ${esc(l.nome)}</div>`));
+    const extra=(dm.length+dg.length+dga.length+df.length)-evs.length;
     if(extra>0)evs.push(`<div class="ev-more">+${extra} mais</div>`);
     cells+=`<div class="mc ${out?'out':''} ${iso===todayY?'today':''}" onclick="agendaGoDay('${iso}')"><div class="mc-day">${d.getDate()}</div>${evs.join('')}</div>`;
   }
@@ -826,24 +937,34 @@ function monthGrid(){
 function weekGrid(){
   const ws=weekStart(agendaRef);
   const days=[];for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);days.push(d)}
-  const meets=meetingsAll(),fus=followupsAll(),todayY=localYMD(new Date());
+  const fus=followupsAll(),todayY=localYMD(new Date());
+  // eventos com horário: reuniões do CRM + eventos do Google
+  const timed=[];
+  state.leads.filter(l=>l.reuniao&&l.stage!=='perdido').forEach(l=>{const s=new Date(l.reuniao);timed.push({kind:'crm',start:s,title:l.nome,sub:l.empresa,leadId:l.id})});
+  gcalTimed().forEach(g=>timed.push({kind:'gcal',start:g.start,title:g.title,link:g.link}));
   let minH=8,maxH=19;
-  meets.filter(m=>days.some(d=>localYMD(d)===localYMD(m.start))).forEach(m=>{minH=Math.min(minH,m.start.getHours());maxH=Math.max(maxH,m.start.getHours()+1)});
+  timed.filter(m=>days.some(d=>localYMD(d)===localYMD(m.start))).forEach(m=>{minH=Math.min(minH,m.start.getHours());maxH=Math.max(maxH,m.start.getHours()+1)});
   minH=Math.max(0,minH);maxH=Math.min(24,Math.max(maxH,minH+1));
   const rowH=48,H=(maxH-minH)*rowH;
   const head=`<div class="week-head"><div class="wh-gutter"></div>${days.map(d=>`<div class="wh-day ${localYMD(d)===todayY?'today':''}"><div class="wh-dow">${DOW[d.getDay()]}</div><div class="wh-num">${d.getDate()}</div></div>`).join('')}</div>`;
-  const allday=`<div class="allday"><div class="ad-gutter">dia<br>todo</div>${days.map(d=>{const iso=localYMD(d);return `<div class="ad-cell">${fus.filter(l=>l.followup===iso).map(l=>`<div class="ev fu" onclick="openDetail('${l.id}')" title="Follow-up: ${esc(l.nome)}">⚑ ${esc(l.nome)}</div>`).join('')}</div>`}).join('')}</div>`;
+  const allday=`<div class="allday"><div class="ad-gutter">dia<br>todo</div>${days.map(d=>{const iso=localYMD(d);
+    const fuChips=fus.filter(l=>l.followup===iso).map(l=>`<div class="ev fu" onclick="openDetail('${l.id}')" title="Follow-up: ${esc(l.nome)}">⚑ ${esc(l.nome)}</div>`).join('');
+    const gChips=gcalAllDayFor(iso).map(g=>`<div class="ev gcal" onclick="window.open('${g.htmlLink}','_blank')" title="Google: ${esc(g.summary)}">${esc(g.summary)}</div>`).join('');
+    return `<div class="ad-cell">${fuChips}${gChips}</div>`}).join('')}</div>`;
   let hoursHtml='';for(let h=minH;h<maxH;h++)hoursHtml+=`<div class="wb-hour">${h}:00</div>`;
   const grad=`repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px ${rowH}px)`;
   const cols=days.map(d=>{
     const iso=localYMD(d);
-    const dm=meets.filter(m=>localYMD(m.start)===iso).sort((a,b)=>a.start-b.start);
+    const dm=timed.filter(m=>localYMD(m.start)===iso).sort((a,b)=>a.start-b.start);
     const lanesEnd=[];
     dm.forEach(m=>{const end=new Date(m.start.getTime()+3600000);let placed=false;for(let i=0;i<lanesEnd.length;i++){if(m.start>=lanesEnd[i]){m._lane=i;lanesEnd[i]=end;placed=true;break}}if(!placed){m._lane=lanesEnd.length;lanesEnd.push(end)}});
     const lc=Math.max(1,lanesEnd.length);
     const blocks=dm.map(m=>{
       const top=((m.start.getHours()+m.start.getMinutes()/60)-minH)*rowH;const w=100/lc,left=m._lane*w;
-      return `<div class="meet-block" style="top:${top}px;height:${rowH-3}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px)" onclick="openDetail('${m.l.id}')" title="${esc(m.l.nome)}${m.l.empresa?' · '+esc(m.l.empresa):''}"><div class="mb-time">${m.start.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div><div class="mb-name">${esc(m.l.nome)}</div></div>`;
+      const hhmm=m.start.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const click=m.kind==='gcal'?`window.open('${m.link}','_blank')`:`openDetail('${m.leadId}')`;
+      const ttl=m.kind==='gcal'?`Google: ${esc(m.title)}`:`${esc(m.title)}${m.sub?' · '+esc(m.sub):''}`;
+      return `<div class="meet-block ${m.kind==='gcal'?'gcal':''}" style="top:${top}px;height:${rowH-3}px;left:calc(${left}% + 2px);width:calc(${w}% - 4px)" onclick="${click}" title="${ttl}"><div class="mb-time">${hhmm}</div><div class="mb-name">${esc(m.title)}</div></div>`;
     }).join('');
     return `<div class="wb-col" style="height:${H}px;background:${grad}">${blocks}</div>`;
   }).join('');
@@ -915,6 +1036,11 @@ function openDetail(id,keepScroll){
       <div class="dg-item"><div class="dgi-l">Criado em</div><div class="dgi-v">${l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—'}</div></div>
     </div>
     ${l.notas?`<p class="detail-section-t">Observações</p><div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px;font-size:13.5px;line-height:1.6;margin-bottom:20px;white-space:pre-wrap">${esc(l.notas)}</div>`:''}
+    <p class="detail-section-t">Arquivos & Anexos</p>
+    <div class="files-wrap">
+      ${(l.files||[]).map(f=>`<div class="file-item" onclick="openFile('${l.id}','${f.path}')"><span class="file-ic">${fileIcon(f.type)}</span><div class="file-meta"><div class="file-name">${esc(f.name)}</div><div class="file-sub">${humanSize(f.size)}</div></div><button class="file-del" onclick="deleteFile('${l.id}','${f.path}',event)" title="Remover">×</button></div>`).join('')}
+      <label class="file-add"><input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="uploadFiles('${l.id}',this)"/>＋ Adicionar foto ou PDF</label>
+    </div>
     <p class="detail-section-t">Histórico & Anotações</p>
     <div class="activity-add">
       <input id="actInput" placeholder="Registrar interação, ligação, nota..." onkeydown="if(event.key==='Enter')addActivity('${l.id}')"/>
@@ -1005,6 +1131,45 @@ async function deleteCurrent(){
   if(!ok)return;
   state.leads=state.leads.filter(x=>x.id!==editingId);
   closeForm();render();toast('Lead excluído');
+}
+
+/* ---------- ARQUIVOS / ANEXOS ---------- */
+const FILE_BUCKET='lead-files';
+const MAX_FILE_MB=15;
+function fileIcon(type){return (type||'').startsWith('image/')?'🖼️':(type||'').includes('pdf')?'📕':'📄'}
+function humanSize(b){if(!b)return '';const u=['B','KB','MB','GB'];let i=0,n=b;while(n>=1024&&i<u.length-1){n/=1024;i++}return (n<10&&i>0?n.toFixed(1):Math.round(n))+' '+u[i]}
+async function uploadFiles(id,input){
+  const files=[...input.files];input.value='';if(!files.length)return;
+  const l=state.leads.find(x=>x.id===id);if(!l)return;
+  toast('Enviando arquivo(s)...');
+  const added=[];
+  for(const f of files){
+    if(f.size>MAX_FILE_MB*1024*1024){toast(`"${f.name}" passa de ${MAX_FILE_MB}MB`,true);continue}
+    const safe=f.name.replace(/[^\w.\-]+/g,'_');
+    const path=`${id}/${Date.now()}_${safe}`;
+    const {error}=await sb.storage.from(FILE_BUCKET).upload(path,f,{contentType:f.type||'application/octet-stream',upsert:false});
+    if(error){toast('Erro no upload: '+error.message,true);continue}
+    added.push({name:f.name,path,type:f.type,size:f.size,at:Date.now()});
+  }
+  if(!added.length)return;
+  const files2=[...(l.files||[]),...added];l.files=files2;l.updated_at=nowISO();
+  const ok=await dbUpdate(id,{files:files2,updated_at:l.updated_at});
+  if(detailId===id)openDetail(id,true);render();
+  if(ok)toast(`${added.length} arquivo(s) anexado(s) ✓`);
+}
+async function openFile(id,path){
+  const {data,error}=await sb.storage.from(FILE_BUCKET).createSignedUrl(path,3600);
+  if(error||!data){toast('Erro ao abrir arquivo',true);return}
+  window.open(data.signedUrl,'_blank');
+}
+async function deleteFile(id,path,e){
+  if(e)e.stopPropagation();
+  if(!confirm('Remover este arquivo?'))return;
+  await sb.storage.from(FILE_BUCKET).remove([path]);
+  const l=state.leads.find(x=>x.id===id);if(!l)return;
+  const files2=(l.files||[]).filter(f=>f.path!==path);l.files=files2;l.updated_at=nowISO();
+  await dbUpdate(id,{files:files2,updated_at:l.updated_at});
+  if(detailId===id)openDetail(id,true);render();toast('Arquivo removido');
 }
 
 /* ---------- UTIL ---------- */
