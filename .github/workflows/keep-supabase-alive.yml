@@ -7,6 +7,10 @@ on:
     - cron: '0 9 * * *' # todo dia as 09:00 UTC (06:00 em Brasilia)
   workflow_dispatch: # permite rodar manualmente pela aba Actions
 
+# necessario pro passo que impede o GitHub de desativar o cron apos 60 dias
+permissions:
+  actions: write
+
 jobs:
   ping:
     runs-on: ubuntu-latest
@@ -22,3 +26,14 @@ jobs:
             echo "Supabase parece estar fora do ar ou pausado" >&2
             exit 1
           fi
+
+      # O GitHub desativa crons apos 60 dias sem commits no repositorio.
+      # Reativar o workflow via API a cada execucao zera esse contador,
+      # entao ele nunca e desativado.
+      - name: Manter workflow ativo (zera contador de 60 dias)
+        run: |
+          curl -sf -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/keep-supabase-alive.yml/enable"
+          echo "Workflow renovado"
