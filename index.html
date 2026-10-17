@@ -336,6 +336,22 @@ tbody tr:hover{background:var(--paper)}
 .meet-block .mb-name{font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meet-block.gcal{background:#3b6fb0;border-left-color:#21487f}
 .meet-block.gcal:hover{background:#33619c}
+/* ============ CLIENTES ============ */
+.svc-pick{display:flex;flex-wrap:wrap;gap:7px}
+.svc-pick label{display:inline-flex;align-items:center;font-size:12.5px;text-transform:none;letter-spacing:0;font-weight:600;padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;transition:.12s;user-select:none}
+.svc-pick label:hover{border-color:var(--gold)}
+.svc-pick label.on{background:var(--coffee-700);border-color:var(--coffee-700);color:#fff}
+.svc-pick input{display:none}
+.chip.svc{background:var(--cream);color:var(--coffee-700);border:1px solid var(--line)}
+.bars{display:flex;align-items:flex-end;gap:12px;height:170px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.bar .bv{font-size:11px;font-weight:700;margin-bottom:5px;white-space:nowrap}
+.bar .b{width:100%;max-width:56px;border-radius:7px 7px 0 0;background:linear-gradient(180deg,var(--gold),var(--coffee-600));min-height:3px;transition:height .5s}
+.bar .bl{font-size:11px;color:var(--ink-soft);margin-top:7px;text-transform:capitalize}
+.fx-input{width:64px;border:1px solid var(--line);border-radius:7px;padding:3px 6px;font-size:12px;text-align:right;background:#fff;outline:none}
+.fx-input:focus{border-color:var(--gold)}
+.setup-box{background:#fff;border:1px dashed var(--gold);border-radius:var(--radius);padding:28px;max-width:620px;margin:30px auto;line-height:1.6}
+.setup-box code{background:var(--paper-2);padding:2px 7px;border-radius:5px;font-size:12.5px}
 @media(max-width:1080px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.agenda-grid{grid-template-columns:1fr}.form-grid,.detail-grid{grid-template-columns:1fr}}
 @media(max-width:780px){.sidebar{display:none}}
 ::-webkit-scrollbar{width:9px;height:9px}
@@ -384,6 +400,11 @@ tbody tr:hover{background:var(--paper)}
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Leads
     </button>
+    <button data-view="clientes">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="2" y1="13" x2="22" y2="13"/></svg>
+      Clientes
+      <span class="badge" id="navCliCount" style="display:none">0</span>
+    </button>
     <button data-view="agenda">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Agenda & Follow-ups
@@ -417,9 +438,9 @@ tbody tr:hover{background:var(--paper)}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
       Arquivados
     </button>
-    <button class="btn" onclick="openLead()">
+    <button class="btn" onclick="currentView==='clientes'?openCliente():openLead()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Novo Lead
+      <span id="btnNovoTxt">Novo Lead</span>
     </button>
   </header>
   <div class="content" id="content"></div>
@@ -472,6 +493,45 @@ tbody tr:hover{background:var(--paper)}
       <button class="close" style="margin-left:auto" onclick="closeDetail()">&times;</button>
     </div>
     <div class="modal-b" id="detailBody" style="padding-top:6px"></div>
+  </div>
+</div>
+
+<!-- CLIENTE MODAL -->
+<div class="overlay" id="cliOverlay">
+  <div class="modal">
+    <div class="modal-h">
+      <h2 id="cliTitle">Novo Cliente</h2>
+      <button class="close" onclick="closeCliente()">&times;</button>
+    </div>
+    <div class="modal-b">
+      <div class="form-grid">
+        <div class="fld"><label>Nome do cliente *</label><input id="c_nome" placeholder="Ex: João Silva"/></div>
+        <div class="fld"><label>Empresa</label><input id="c_empresa" placeholder="Ex: Titan Ridge Construction"/></div>
+        <div class="fld"><label>Telefone / WhatsApp</label><input id="c_telefone"/></div>
+        <div class="fld"><label>E-mail</label><input id="c_email"/></div>
+        <div class="fld full"><label>Plano · serviços contratados</label><div class="svc-pick" id="c_servicos"></div></div>
+        <div class="fld"><label>Valor mensal (recorrência)</label><input id="c_valor" type="number" min="0" step="0.01" placeholder="0"/></div>
+        <div class="fld"><label>Moeda</label><select id="c_moeda"><option value="USD">USD · dólar</option><option value="BRL">BRL · real</option></select></div>
+        <div class="fld"><label>Canal de aquisição</label><select id="c_canal"></select></div>
+        <div class="fld"><label>Forma de pagamento</label><select id="c_pagamento"></select></div>
+        <div class="fld"><label>Dia do vencimento</label><input id="c_dia" type="number" min="1" max="31" placeholder="Ex: 10"/></div>
+        <div class="fld"><label>Responsável</label><input id="c_resp" placeholder="Quem cuida da conta"/></div>
+        <div class="fld"><label>Início do contrato *</label><input id="c_inicio" type="date"/></div>
+        <div class="fld"><label>Fim do contrato / renovação</label><input id="c_fim" type="date"/></div>
+        <div class="fld"><label>Status</label>
+          <select id="c_status" onchange="cliStatusUI()"><option value="ativo">🟢 Ativo</option><option value="pausado">🟡 Pausado</option><option value="cancelado">🔴 Cancelado (churn)</option></select>
+        </div>
+        <div class="fld" id="c_cancelWrap"><label>Data do cancelamento</label><input id="c_cancel" type="date"/></div>
+        <div class="fld full" id="c_motivoWrap"><label>Motivo do cancelamento</label><input id="c_motivo" placeholder="Ex: preço, sem resultado, fechou a empresa..."/></div>
+        <div class="fld full"><label>Observações</label><textarea id="c_notas" placeholder="Acordos, particularidades da conta..."></textarea></div>
+      </div>
+      <div id="cliFiles" style="margin-top:20px"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn-del" id="cliDelBtn" onclick="deleteCliente()">Excluir cliente</button>
+      <button class="btn ghost" onclick="closeCliente()">Cancelar</button>
+      <button class="btn" id="cliSaveBtn" onclick="saveCliente()">Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -583,7 +643,7 @@ const STAGES = [
 const SRC_COLORS={'Outbound':'#5b7a96','Inbound':'#5d8a5e','Indicação':'#c69749','Campanha de Tráfego':'#7159a0','Evento':'#b4524a'};
 const TEMP={hot:'🔥',warm:'🟡',cold:'❄️'};
 
-let state={leads:[],showArquivados:false};
+let state={leads:[],clientes:[],showArquivados:false};
 let currentView='dashboard';
 let editingId=null, detailId=null;
 let sortCol='updated_at', sortDir=-1;
@@ -632,7 +692,7 @@ async function onLogin(session){
   document.getElementById('userEmail').textContent=session.user.email;
   document.getElementById('loginScreen').classList.add('hide');
   document.getElementById('boot').classList.remove('hide');
-  await loadLeads();
+  await Promise.all([loadLeads(),loadClientes()]);
   document.getElementById('boot').classList.add('hide');
   render();
   subscribeRealtime();
@@ -678,12 +738,16 @@ async function toggleArquivados(){
   render();
 }
 
-let reloadTimer=null;
+let reloadTimer=null, cliReloadTimer=null;
 function subscribeRealtime(){
   try{
     sb.channel('leads-rt').on('postgres_changes',{event:'*',schema:'public',table:'leads'},()=>{
       clearTimeout(reloadTimer);
       reloadTimer=setTimeout(async()=>{await loadLeads();render();if(detailId)openDetail(detailId,true)},400);
+    }).subscribe();
+    sb.channel('clientes-rt').on('postgres_changes',{event:'*',schema:'public',table:'clientes'},()=>{
+      clearTimeout(cliReloadTimer);
+      cliReloadTimer=setTimeout(async()=>{await loadClientes();render()},400);
     }).subscribe();
   }catch(e){/* realtime opcional */}
 }
@@ -708,6 +772,7 @@ const TITLES={
   dashboard:['Dashboard','Visão geral da operação comercial'],
   pipeline:['Pipeline','Arraste os cards entre as etapas'],
   leads:['Leads','Sua base completa de contatos'],
+  clientes:['Clientes','Carteira ativa, recorrência e churn'],
   agenda:['Agenda & Follow-ups','O que precisa de atenção agora'],
 };
 document.getElementById('nav').addEventListener('click',e=>{
@@ -716,6 +781,10 @@ document.getElementById('nav').addEventListener('click',e=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x===b));
   document.getElementById('pageTitle').textContent=TITLES[currentView][0];
   document.getElementById('pageSub').textContent=TITLES[currentView][1];
+  const cli=currentView==='clientes';
+  document.getElementById('btnNovoTxt').textContent=cli?'Novo Cliente':'Novo Lead';
+  document.getElementById('globalSearch').placeholder=cli?'Buscar cliente...':'Buscar lead...';
+  document.getElementById('btnArquivados').classList.toggle('hide',cli);
   render();
 });
 function updateBadges(){
@@ -724,6 +793,9 @@ function updateBadges(){
   const fu=state.leads.filter(l=>l.followup&&l.stage!=='fechado'&&l.stage!=='perdido'&&daysUntil(l.followup)<=0).length;
   const badge=document.getElementById('navFuCount');
   badge.textContent=fu; badge.style.display=fu?'':'none';
+  const ativos=state.clientes.filter(c=>c.status==='ativo').length;
+  const cb=document.getElementById('navCliCount');
+  cb.textContent=ativos; cb.style.display=ativos?'':'none';
 }
 function daysUntil(d){if(!d)return 9999;const a=new Date(d);a.setHours(0,0,0,0);const b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/86400000)}
 
@@ -734,6 +806,7 @@ function render(){
   if(currentView==='dashboard')c.innerHTML=viewDashboard();
   else if(currentView==='pipeline'){c.innerHTML=viewPipeline();wireDnD();}
   else if(currentView==='leads')c.innerHTML=viewLeads();
+  else if(currentView==='clientes')c.innerHTML=viewClientes();
   else if(currentView==='agenda')c.innerHTML=viewAgenda();
 }
 function filtered(){
@@ -1058,7 +1131,11 @@ function openDetail(id,keepScroll){
           ${l.valor?`<span class="chip val">${money(l.valor)}</span>`:''}
         </div>
       </div>
-      <button class="btn ghost sm" onclick="openLead('${l.id}')">✎ Editar</button>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <button class="btn ghost sm" onclick="openLead('${l.id}')">✎ Editar</button>
+        ${clienteDoLead(l.id)?`<button class="btn sm" onclick="closeDetail();openCliente('${clienteDoLead(l.id).id}')">Ver cliente →</button>`
+          :l.stage==='fechado'?`<button class="btn sm" onclick="leadParaCliente('${l.id}')">★ Virar cliente</button>`:''}
+      </div>
     </div>
     ${contacts.length?`<div class="contact-row">${contacts.join('')}</div>`:''}
     <p class="detail-section-t">Etapa do funil</p>
@@ -1169,6 +1246,306 @@ async function deleteCurrent(){
   closeForm();render();toast('Lead excluído');
 }
 
+/* ---------- CLIENTES ---------- */
+/* Lead é oportunidade, cliente é contrato — tabela própria (sql/002).
+   MRR e churn são calculados a partir das datas de início e de
+   cancelamento, então o histórico se reconstrói sozinho. */
+const SERVICOS=['Google Ads','Meta Ads','Social Media','Site / LP','Google Meu Negócio'];
+const CANAIS=['Indicação','Meta Ads','Google Ads','Instagram orgânico','Outbound','Evento','Outro'];
+const PAGAMENTOS=['Stripe','Zelle','Pix','Transferência','Cartão','Boleto','Outro'];
+const CLI_STATUS={ativo:{name:'Ativo',color:'#5d8a5e'},pausado:{name:'Pausado',color:'#c69749'},cancelado:{name:'Cancelado',color:'#b4524a'}};
+let editingCliId=null, cliFilterStatus='vigentes', cliFilterSvc='';
+
+async function loadClientes(){
+  const {data,error}=await sb.from('clientes').select('*').order('data_inicio',{ascending:false});
+  /* Tabela ainda não criada: a tela mostra o passo a passo em vez de quebrar. */
+  if(error){state.semTabelaClientes=/clientes|relation|schema/i.test(error.message||'');if(!state.semTabelaClientes)toast('Erro ao carregar clientes: '+error.message,true);return}
+  state.semTabelaClientes=false;
+  state.clientes=(data||[]).map(c=>({...c,servicos:c.servicos||[],files:Array.isArray(c.files)?c.files:[],activity:Array.isArray(c.activity)?c.activity:[]}));
+}
+function clienteDoLead(leadId){return state.clientes.find(c=>c.lead_id===String(leadId))}
+
+/* Cotação usada pra somar USD e BRL no mesmo MRR. Guardada no navegador. */
+function cotacao(){const v=Number(localStorage.getItem('cotacaoUSD'));return v>0?v:5.4}
+function setCotacao(v){const n=Number(String(v).replace(',','.'));if(n>0){localStorage.setItem('cotacaoUSD',n);render()}}
+function emUSD(c){const v=Number(c.valor)||0;return c.moeda==='BRL'?v/cotacao():v}
+function usd(n){return (Number(n)||0).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0})}
+function valorMoeda(v,m){return m==='BRL'?money(v):usd(v)}
+function ymd(d){return localYMD(d)}
+/* Dias até uma data 'AAAA-MM-DD' no fuso local (new Date('AAAA-MM-DD') seria UTC). */
+function diasAte(iso){const h=new Date();h.setHours(0,0,0,0);return Math.round((new Date(iso+'T00:00')-h)/86400000)}
+function fmtData(iso){return iso?new Date(iso+'T00:00').toLocaleDateString('pt-BR'):'—'}
+function mesesEntre(a,b){const d1=new Date(a+'T00:00'),d2=b instanceof Date?b:new Date(b+'T00:00');return Math.max(0,(d2.getFullYear()-d1.getFullYear())*12+(d2.getMonth()-d1.getMonth())-(d2.getDate()<d1.getDate()?1:0))}
+
+/* Pagante numa data: já começou, não cancelou até ali e não está pausado. */
+function pagandoEm(c,iso){
+  if(c.status==='pausado')return false;
+  if(!c.data_inicio||c.data_inicio>iso)return false;
+  return !(c.data_cancelamento&&c.data_cancelamento<=iso);
+}
+function proximoVencimento(dia){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const noMes=(y,m)=>new Date(y,m,Math.min(dia,new Date(y,m+1,0).getDate()));
+  let d=noMes(hoje.getFullYear(),hoje.getMonth());
+  if(d<hoje)d=noMes(hoje.getFullYear(),hoje.getMonth()+1);
+  return d;
+}
+
+function metricasClientes(){
+  const C=state.clientes,hoje=new Date(),hojeISO=ymd(hoje);
+  const ativos=C.filter(c=>c.status==='ativo');
+  const mrr=C.filter(c=>pagandoEm(c,hojeISO)).reduce((s,c)=>s+emUSD(c),0);
+  // churn do mês corrente: cancelados no mês ÷ base que existia no dia 1
+  const ini=ymd(new Date(hoje.getFullYear(),hoje.getMonth(),1));
+  const base=C.filter(c=>c.data_inicio&&c.data_inicio<ini&&!(c.data_cancelamento&&c.data_cancelamento<ini));
+  const churnados=C.filter(c=>c.status==='cancelado'&&c.data_cancelamento&&c.data_cancelamento>=ini&&c.data_cancelamento<=hojeISO);
+  const churnPct=base.length?Math.round(churnados.length/base.length*1000)/10:0;
+  const mrrPerdido=churnados.reduce((s,c)=>s+emUSD(c),0);
+  // MRR no fim de cada um dos últimos 6 meses (o atual vai até hoje)
+  const serie=[];
+  for(let i=5;i>=0;i--){
+    const fim=i===0?hoje:new Date(hoje.getFullYear(),hoje.getMonth()-i+1,0);
+    const iso=ymd(fim);
+    serie.push({label:fim.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),val:C.filter(c=>pagandoEm(c,iso)).reduce((s,c)=>s+emUSD(c),0)});
+  }
+  const tempos=C.filter(c=>c.data_inicio).map(c=>mesesEntre(c.data_inicio,c.data_cancelamento||hoje));
+  const tempoMedio=tempos.length?Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length*10)/10:0;
+  return {ativos,mrr,churnados,churnPct,mrrPerdido,serie,tempoMedio,pausados:C.filter(c=>c.status==='pausado').length};
+}
+
+function viewClientes(){
+  if(state.semTabelaClientes)return `<div class="setup-box">
+    <h3 style="font-size:24px;margin-bottom:8px">Falta criar a tabela de clientes</h3>
+    <p>No Supabase, abra <b>SQL Editor → New query</b>, cole o conteúdo de <code>sql/002-clientes.sql</code> e clique em <b>Run</b>. Depois recarregue esta página.</p>
+  </div>`;
+  const C=state.clientes;
+  if(!C.length)return emptyState('Nenhum cliente cadastrado ainda','Clique em “Novo Cliente” no topo, ou abra um lead ganho e use “Virar cliente”.');
+  const m=metricasClientes(),hojeISO=ymd(new Date());
+  const ticket=m.ativos.length?m.mrr/m.ativos.length:0;
+  const maxS=Math.max(1,...m.serie.map(x=>x.val));
+  // por serviço: quantos clientes ativos têm cada um (um cliente conta em vários)
+  const porSvc=SERVICOS.map(s=>({n:s,qtd:m.ativos.filter(c=>c.servicos.includes(s)).length})).filter(x=>x.qtd);
+  const maxSvc=Math.max(1,...porSvc.map(x=>x.qtd));
+  const porCanal={};m.ativos.forEach(c=>{const k=c.canal||'Não informado';porCanal[k]=(porCanal[k]||0)+emUSD(c)});
+  const canais=Object.entries(porCanal).sort((a,b)=>b[1]-a[1]);const maxC=Math.max(1,...canais.map(x=>x[1]));
+  const venc=m.ativos.filter(c=>c.dia_vencimento).map(c=>({c,d:proximoVencimento(c.dia_vencimento)})).map(x=>({...x,dias:diasAte(ymd(x.d))})).filter(x=>x.dias<=10).sort((a,b)=>a.dias-b.dias);
+  const renov=m.ativos.filter(c=>c.contrato_fim).map(c=>({c,dias:diasAte(c.contrato_fim)})).filter(x=>x.dias<=30).sort((a,b)=>a.dias-b.dias);
+
+  let L=C.filter(c=>{
+    const q=(document.getElementById('globalSearch').value||'').toLowerCase().trim();
+    if(q&&![c.nome,c.empresa,c.email,c.telefone,c.canal,c.resp,...c.servicos].some(v=>(v||'').toLowerCase().includes(q)))return false;
+    if(cliFilterStatus==='vigentes'&&c.status==='cancelado')return false;
+    if(['ativo','pausado','cancelado'].includes(cliFilterStatus)&&c.status!==cliFilterStatus)return false;
+    if(cliFilterSvc&&!c.servicos.includes(cliFilterSvc))return false;
+    return true;
+  }).sort((a,b)=>(a.status==='cancelado')-(b.status==='cancelado')||emUSD(b)-emUSD(a));
+
+  const sel=(v,cur)=>v===cur?'selected':'';
+  const rowsHTML=L.map(c=>{
+    const st=CLI_STATUS[c.status]||CLI_STATUS.ativo;
+    const meses=c.data_inicio?mesesEntre(c.data_inicio,c.data_cancelamento||new Date()):0;
+    const rDias=c.contrato_fim?diasAte(c.contrato_fim):null;
+    return `<tr onclick="openCliente('${c.id}')">
+      <td><div class="t-name">${esc(c.nome)}</div>${c.empresa?`<div class="t-comp">${esc(c.empresa)}</div>`:''}</td>
+      <td>${c.servicos.length?c.servicos.map(s=>`<span class="chip svc" style="margin:1px 3px 1px 0;display:inline-block">${esc(s)}</span>`).join(''):'—'}</td>
+      <td style="font-weight:700;white-space:nowrap">${c.valor?valorMoeda(c.valor,c.moeda):'—'}${c.moeda==='BRL'&&c.valor?`<div class="t-comp">≈ ${usd(emUSD(c))}</div>`:''}</td>
+      <td>${esc(c.canal||'—')}</td>
+      <td style="white-space:nowrap">${c.dia_vencimento?`dia ${c.dia_vencimento}`:'—'}${c.forma_pagamento?`<div class="t-comp">${esc(c.forma_pagamento)}</div>`:''}</td>
+      <td style="white-space:nowrap">${fmtData(c.data_inicio)}<div class="t-comp">${meses} ${meses===1?'mês':'meses'}${c.files.length?' · 📎':''}</div></td>
+      <td style="white-space:nowrap">${c.contrato_fim?`<span style="${rDias!==null&&rDias<=30&&c.status!=='cancelado'?'color:var(--red);font-weight:700':''}">${fmtData(c.contrato_fim)}</span>`:'—'}</td>
+      <td><span class="pill" style="background:${st.color}1a;color:${st.color}"><span class="p-dot" style="background:${st.color}"></span>${st.name}</span>${c.status==='cancelado'&&c.data_cancelamento?`<div class="t-comp">${fmtData(c.data_cancelamento)}</div>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="kpi-grid">
+    <div class="kpi"><div class="k-label">Clientes ativos</div><div class="k-val">${m.ativos.length}</div><div class="k-foot">${m.pausados?`${m.pausados} pausado(s) · `:''}${C.length} no histórico</div></div>
+    <div class="kpi"><div class="k-label">MRR</div><div class="k-val" style="color:var(--green)">${usd(m.mrr)}</div><div class="k-foot">≈ ${money(m.mrr*cotacao())} · US$1 = R$ <input class="fx-input" value="${cotacao().toFixed(2)}" onchange="setCotacao(this.value)" onclick="event.stopPropagation()" title="Cotação usada pra somar USD e BRL"/></div></div>
+    <div class="kpi"><div class="k-label">Churn do mês</div><div class="k-val" style="${m.churnados.length?'color:var(--red)':''}">${m.churnPct}%</div><div class="k-foot">${m.churnados.length} cancelado(s) · −${usd(m.mrrPerdido)}/mês</div></div>
+    <div class="kpi"><div class="k-label">Ticket médio</div><div class="k-val">${usd(ticket)}</div><div class="k-foot">tempo médio de casa: <b style="color:var(--ink)">${m.tempoMedio} meses</b></div></div>
+  </div>
+  <div class="dash-row">
+    <div class="card">
+      <div class="card-h"><h3>Receita recorrente</h3><span style="font-size:12px;color:var(--ink-soft)">MRR no fim de cada mês · USD</span></div>
+      <div class="card-b"><div class="bars">${m.serie.map(x=>`<div class="bar"><div class="bv">${x.val?usd(x.val):''}</div><div class="b" style="height:${x.val/maxS*120}px"></div><div class="bl">${x.label}</div></div>`).join('')}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>Por serviço</h3><span style="font-size:12px;color:var(--ink-soft)">clientes ativos</span></div>
+      <div class="card-b">${porSvc.length?porSvc.map(x=>`<div class="src-row"><span class="s-name">${esc(x.n)}</span><span class="s-bar" style="margin-left:auto"><span style="width:${x.qtd/maxSvc*100}%;background:var(--coffee-600)"></span></span><span class="s-val" style="margin-left:10px;min-width:20px;text-align:right">${x.qtd}</span></div>`).join(''):'<div style="color:var(--ink-soft);font-size:13px">Marque os serviços de cada cliente.</div>'}</div>
+    </div>
+  </div>
+  <div class="dash-row">
+    <div class="card">
+      <div class="card-h"><h3>Vencimentos e renovações</h3><span style="font-size:12px;color:var(--ink-soft)">pagamentos em 10 dias · contratos em 30</span></div>
+      <div class="card-b">${venc.length||renov.length?`<div class="mini-list">
+        ${venc.map(({c,d,dias})=>`<div class="mini-item" onclick="openCliente('${c.id}')" style="cursor:pointer">
+          <div class="mi-date"><div class="d-day">${d.getDate()}</div><div class="d-mon">${d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</div></div>
+          <div class="mi-body"><div class="mi-title">${esc(c.nome)}${c.empresa?' · '+esc(c.empresa):''}</div><div class="mi-sub">Pagamento ${c.valor?valorMoeda(c.valor,c.moeda):''}${c.forma_pagamento?' · '+esc(c.forma_pagamento):''}</div></div>
+          <span class="fu-when ${dias===0?'today':'soon'}">${dias===0?'Hoje':dias===1?'Amanhã':`em ${dias}d`}</span>
+        </div>`).join('')}
+        ${renov.map(({c,dias})=>`<div class="mini-item" onclick="openCliente('${c.id}')" style="cursor:pointer">
+          <div class="mi-date" style="font-size:20px">📄</div>
+          <div class="mi-body"><div class="mi-title">${esc(c.nome)}${c.empresa?' · '+esc(c.empresa):''}</div><div class="mi-sub">Contrato ${dias<0?'venceu':'vence'} em ${fmtData(c.contrato_fim)} — renovar</div></div>
+          <span class="fu-when late">${dias<0?`${-dias}d atrás`:dias===0?'Hoje':`em ${dias}d`}</span>
+        </div>`).join('')}
+      </div>`:'<div style="color:var(--ink-soft);font-size:13px;padding:8px 0">Nada nos próximos dias.</div>'}</div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>MRR por canal</h3><span style="font-size:12px;color:var(--ink-soft)">de onde vem a receita</span></div>
+      <div class="card-b">${canais.map(([n,v])=>`<div class="src-row"><span class="s-name">${esc(n)}</span><span class="s-bar" style="margin-left:auto"><span style="width:${v/maxC*100}%;background:var(--gold)"></span></span><span class="s-val" style="margin-left:10px;min-width:64px;text-align:right">${usd(v)}</span></div>`).join('')||'<div style="color:var(--ink-soft);font-size:13px">Sem clientes ativos.</div>'}</div>
+    </div>
+  </div>
+  <div class="filters">
+    <select onchange="cliFilterStatus=this.value;render()">
+      <option value="vigentes" ${sel('vigentes',cliFilterStatus)}>Ativos e pausados</option>
+      <option value="ativo" ${sel('ativo',cliFilterStatus)}>Só ativos</option>
+      <option value="pausado" ${sel('pausado',cliFilterStatus)}>Só pausados</option>
+      <option value="cancelado" ${sel('cancelado',cliFilterStatus)}>Cancelados (churn)</option>
+      <option value="todos" ${sel('todos',cliFilterStatus)}>Todos</option>
+    </select>
+    <select onchange="cliFilterSvc=this.value;render()">
+      <option value="">Todos os serviços</option>
+      ${SERVICOS.map(s=>`<option ${sel(s,cliFilterSvc)}>${s}</option>`).join('')}
+    </select>
+    <span style="color:var(--ink-soft);font-size:12.5px;margin-left:auto">${L.length} cliente(s)</span>
+  </div>
+  ${L.length?`<div class="table-wrap"><table>
+    <thead><tr><th>Cliente</th><th>Plano</th><th>Mensal</th><th>Canal</th><th>Vencimento</th><th>Desde</th><th>Contrato até</th><th>Status</th></tr></thead>
+    <tbody>${rowsHTML}</tbody></table></div>`:'<div class="empty" style="padding:30px"><div class="e-s">Nenhum cliente com esses filtros.</div></div>'}`;
+}
+
+/* ---------- CLIENTE · FORM ---------- */
+function cliStatusUI(){
+  const canc=document.getElementById('c_status').value==='cancelado';
+  document.getElementById('c_cancelWrap').classList.toggle('hide',!canc);
+  document.getElementById('c_motivoWrap').classList.toggle('hide',!canc);
+  if(canc&&!document.getElementById('c_cancel').value)document.getElementById('c_cancel').value=ymd(new Date());
+}
+function cliFill(c){
+  const F=id=>document.getElementById(id);
+  const opts=(arr,cur)=>`<option value="">—</option>`+arr.map(o=>`<option ${o===cur?'selected':''}>${o}</option>`).join('');
+  F('c_canal').innerHTML=opts(CANAIS,c.canal);F('c_pagamento').innerHTML=opts(PAGAMENTOS,c.forma_pagamento);
+  F('c_servicos').innerHTML=SERVICOS.map(s=>{const on=(c.servicos||[]).includes(s);
+    return `<label class="${on?'on':''}"><input type="checkbox" value="${s}" ${on?'checked':''} onchange="this.parentElement.classList.toggle('on',this.checked)"/>${s}</label>`}).join('');
+  F('c_nome').value=c.nome||'';F('c_empresa').value=c.empresa||'';F('c_telefone').value=c.telefone||'';F('c_email').value=c.email||'';
+  F('c_valor').value=c.valor!=null?c.valor:'';F('c_moeda').value=c.moeda||'USD';F('c_dia').value=c.dia_vencimento||'';
+  F('c_resp').value=c.resp||'';F('c_inicio').value=c.data_inicio||ymd(new Date());F('c_fim').value=c.contrato_fim||'';
+  F('c_status').value=c.status||'ativo';F('c_cancel').value=c.data_cancelamento||'';F('c_motivo').value=c.motivo_cancelamento||'';
+  F('c_notas').value=c.notas||'';
+  cliStatusUI();
+}
+function cliFilesHTML(c){
+  if(!c||!c.id)return `<p class="detail-section-t">Contrato & anexos</p><div style="color:var(--ink-soft);font-size:13px">Salve o cliente para anexar o contrato.</div>`;
+  return `<p class="detail-section-t">Contrato & anexos</p><div class="files-wrap" style="margin-bottom:0">
+    ${c.files.map(f=>`<div class="file-item" onclick="openFile('','${f.path}')"><span class="file-ic">${fileIcon(f.type)}</span><div class="file-meta"><div class="file-name">${esc(f.name)}</div><div class="file-sub">${humanSize(f.size)} · ${new Date(f.at).toLocaleDateString('pt-BR')}</div></div><button class="file-del" onclick="cliDeleteFile('${c.id}','${f.path}',event)" title="Remover">×</button></div>`).join('')}
+    <label class="file-add"><input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="cliUpload('${c.id}',this)"/>＋ Anexar contrato (PDF ou foto)</label>
+  </div>`;
+}
+function openCliente(id,preset){
+  editingCliId=id||null;
+  const c=id?state.clientes.find(x=>x.id===id):(preset||{});
+  if(id&&!c)return;
+  document.getElementById('cliTitle').textContent=id?'Editar Cliente':'Novo Cliente';
+  document.getElementById('cliDelBtn').style.display=id?'':'none';
+  cliFill(c);
+  document.getElementById('cliFiles').innerHTML=cliFilesHTML(id?c:null);
+  document.getElementById('cliOverlay').dataset.leadId=(preset&&preset.lead_id)||'';
+  document.getElementById('cliOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('c_nome').focus(),50);
+}
+function closeCliente(){document.getElementById('cliOverlay').classList.remove('open')}
+function leadParaCliente(leadId){
+  const l=state.leads.find(x=>x.id===leadId);if(!l)return;
+  const canal=CANAIS.includes(l.campanha)?l.campanha:l.origem==='Indicação'?'Indicação':l.origem==='Outbound'?'Outbound':l.origem==='Evento'?'Evento':'';
+  closeDetail();
+  openCliente(null,{nome:l.nome,empresa:l.empresa,telefone:l.telefone,email:l.email,resp:l.resp,canal,
+    servicos:SERVICOS.filter(s=>(l.servico||'').toLowerCase().includes(s.toLowerCase().split(' ')[0])),
+    lead_id:String(l.id),data_inicio:ymd(new Date())});
+}
+function cliGather(){
+  const V=id=>document.getElementById(id).value.trim();
+  const status=V('c_status');
+  return {
+    nome:V('c_nome'),empresa:V('c_empresa'),telefone:V('c_telefone'),email:V('c_email'),
+    servicos:[...document.querySelectorAll('#c_servicos input:checked')].map(i=>i.value),
+    valor:V('c_valor')===''?null:Number(V('c_valor')),moeda:V('c_moeda'),
+    canal:V('c_canal')||null,forma_pagamento:V('c_pagamento')||null,
+    dia_vencimento:V('c_dia')===''?null:Math.min(31,Math.max(1,parseInt(V('c_dia'),10)||1)),
+    resp:V('c_resp'),data_inicio:V('c_inicio'),contrato_fim:V('c_fim')||null,status,
+    // cancelamento só existe com status cancelado — reativar limpa os campos
+    data_cancelamento:status==='cancelado'?(V('c_cancel')||ymd(new Date())):null,
+    motivo_cancelamento:status==='cancelado'?V('c_motivo'):null,
+    notas:V('c_notas'),
+  };
+}
+async function saveCliente(){
+  const data=cliGather();
+  if(!data.nome){toast('Informe o nome do cliente',true);document.getElementById('c_nome').focus();return}
+  if(!data.data_inicio){toast('Informe o início do contrato',true);return}
+  const btn=document.getElementById('cliSaveBtn');btn.disabled=true;btn.textContent='Salvando...';
+  if(editingCliId){
+    const old=state.clientes.find(x=>x.id===editingCliId);
+    const activity=[...(old.activity||[])];
+    if(old.status!==data.status)activity.unshift({t:`Status: ${CLI_STATUS[old.status].name} → ${CLI_STATUS[data.status].name}`,at:Date.now()});
+    if(Number(old.valor)!==Number(data.valor)||old.moeda!==data.moeda)activity.unshift({t:`Valor: ${old.valor?valorMoeda(old.valor,old.moeda):'—'} → ${data.valor?valorMoeda(data.valor,data.moeda):'—'}`,at:Date.now()});
+    const patch={...data,activity,updated_at:nowISO()};
+    const {error}=await sb.from('clientes').update(patch).eq('id',editingCliId);
+    btn.disabled=false;btn.textContent='Salvar';
+    if(error){toast('Erro ao salvar: '+error.message,true);return}
+    Object.assign(old,patch);
+    closeCliente();render();toast('Cliente atualizado ✓');
+  }else{
+    const leadId=document.getElementById('cliOverlay').dataset.leadId||null;
+    const row={...data,lead_id:leadId,activity:[{t:'Cliente cadastrado',at:Date.now()}]};
+    const {data:created,error}=await sb.from('clientes').insert(row).select().single();
+    btn.disabled=false;btn.textContent='Salvar';
+    if(error){toast('Erro ao salvar: '+error.message,true);return}
+    state.clientes.unshift({...created,servicos:created.servicos||[],files:[],activity:created.activity||[]});
+    if(leadId){const l=state.leads.find(x=>String(x.id)===leadId);
+      if(l){const activity=[{t:'Virou cliente ★',at:Date.now()},...(l.activity||[])];l.activity=activity;await dbUpdate(l.id,{activity,updated_at:nowISO()})}}
+    // reabre já salvo, pra poder anexar o contrato na sequência
+    openCliente(created.id);render();toast('Cliente cadastrado ✓ — anexe o contrato se quiser');
+  }
+}
+async function deleteCliente(){
+  if(!editingCliId)return;
+  if(!confirm('Excluir este cliente permanentemente?\n\nSe ele só parou de pagar, use o status "Cancelado" — assim o churn fica registrado.'))return;
+  const c=state.clientes.find(x=>x.id===editingCliId);
+  if(c&&c.files.length)await sb.storage.from(FILE_BUCKET).remove(c.files.map(f=>f.path));
+  const {error}=await sb.from('clientes').delete().eq('id',editingCliId);
+  if(error){toast('Erro ao excluir: '+error.message,true);return}
+  state.clientes=state.clientes.filter(x=>x.id!==editingCliId);
+  closeCliente();render();toast('Cliente excluído');
+}
+async function cliUpload(id,input){
+  const files=[...input.files];input.value='';if(!files.length)return;
+  const c=state.clientes.find(x=>x.id===id);if(!c)return;
+  toast('Enviando arquivo(s)...');
+  const added=[];
+  for(const f of files){
+    if(f.size>MAX_FILE_MB*1024*1024){toast(`"${f.name}" passa de ${MAX_FILE_MB}MB`,true);continue}
+    const path=`clientes/${id}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g,'_')}`;
+    const {error}=await sb.storage.from(FILE_BUCKET).upload(path,f,{contentType:f.type||'application/octet-stream',upsert:false});
+    if(error){toast('Erro no upload: '+error.message,true);continue}
+    added.push({name:f.name,path,type:f.type,size:f.size,at:Date.now()});
+  }
+  if(!added.length)return;
+  c.files=[...c.files,...added];c.updated_at=nowISO();
+  const {error}=await sb.from('clientes').update({files:c.files,updated_at:c.updated_at}).eq('id',id);
+  if(error){toast('Erro ao salvar anexo: '+error.message,true);return}
+  document.getElementById('cliFiles').innerHTML=cliFilesHTML(c);render();
+  toast(`${added.length} arquivo(s) anexado(s) ✓`);
+}
+async function cliDeleteFile(id,path,e){
+  e.stopPropagation();
+  if(!confirm('Remover este arquivo?'))return;
+  await sb.storage.from(FILE_BUCKET).remove([path]);
+  const c=state.clientes.find(x=>x.id===id);if(!c)return;
+  c.files=c.files.filter(f=>f.path!==path);c.updated_at=nowISO();
+  await sb.from('clientes').update({files:c.files,updated_at:c.updated_at}).eq('id',id);
+  document.getElementById('cliFiles').innerHTML=cliFilesHTML(c);render();toast('Arquivo removido');
+}
+
 /* ---------- ARQUIVOS / ANEXOS ---------- */
 const FILE_BUCKET='lead-files';
 const MAX_FILE_MB=15;
@@ -1220,7 +1597,7 @@ function exportData(){
   toast('Backup exportado ✓');
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeForm();closeDetail()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeForm();closeDetail();closeCliente()}});
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
 
 /* ===================== INIT ===================== */
