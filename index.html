@@ -97,6 +97,9 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .btn:hover{background:var(--coffee-600)}
 .btn.ghost{background:#fff;color:var(--coffee-700);border:1px solid var(--line)}
 .btn.ghost:hover{background:var(--paper-2)}
+/* Modo acervo ligado: o botão fica preenchido pra não restar dúvida
+   de que o funil na tela não é a operação ativa. */
+.btn.ghost.active{background:var(--coffee-700);color:#fff;border-color:var(--coffee-700)}
 .btn.sm{padding:7px 12px;font-size:12.5px}
 .btn:disabled{opacity:.6;cursor:default}
 .content{padding:26px 30px 60px;overflow-y:auto}
@@ -410,6 +413,10 @@ tbody tr:hover{background:var(--paper)}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="globalSearch" placeholder="Buscar lead..." oninput="render()"/>
     </div>
+    <button class="btn ghost" id="btnArquivados" onclick="toggleArquivados()" title="Leads da operação antiga (BR)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
+      Arquivados
+    </button>
     <button class="btn" onclick="openLead()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Novo Lead
@@ -576,7 +583,7 @@ const STAGES = [
 const SRC_COLORS={'Outbound':'#5b7a96','Inbound':'#5d8a5e','Indicação':'#c69749','Campanha de Tráfego':'#7159a0','Evento':'#b4524a'};
 const TEMP={hot:'🔥',warm:'🟡',cold:'❄️'};
 
-let state={leads:[]};
+let state={leads:[],showArquivados:false};
 let currentView='dashboard';
 let editingId=null, detailId=null;
 let sortCol='updated_at', sortDir=-1;
@@ -638,10 +645,39 @@ async function logout(){
 
 /* ===================== DATA ===================== */
 async function loadLeads(){
-  const {data,error}=await sb.from('leads').select('*').order('updated_at',{ascending:false});
+  /* O funil mostra só a operação ativa. Os leads da operação antiga (BR)
+     ficam com arquivado=true e saem daqui — nada foi apagado, e o botão
+     "Arquivados" no topo traz eles de volta à vista. */
+  const base=()=>sb.from('leads').select('*').order('updated_at',{ascending:false});
+  let q=base();
+  if(!state.showArquivados) q=q.eq('arquivado',false);
+  let {data,error}=await q;
+  /* Se a coluna 'arquivado' ainda não foi criada no banco (migração
+     001 não rodada), o filtro quebra a consulta inteira. Nesse caso
+     recarrega sem filtro em vez de deixar o CRM em branco. */
+  if(error&&/arquivado/i.test(error.message||'')){
+    ({data,error}=await base());
+    state.semColunaArquivado=true;
+  }
   if(error){toast('Erro ao carregar: '+error.message,true);return}
   state.leads=(data||[]).map(l=>({...l,activity:Array.isArray(l.activity)?l.activity:[],files:Array.isArray(l.files)?l.files:[]}));
 }
+/* Alterna entre a operação ativa e o acervo da operação antiga. */
+async function toggleArquivados(){
+  if(state.semColunaArquivado){
+    toast('Rode a migração sql/001-arquivar-leads-legado.sql no Supabase primeiro',true);
+    return;
+  }
+  state.showArquivados=!state.showArquivados;
+  const b=document.getElementById('btnArquivados');
+  if(b){
+    b.classList.toggle('active',state.showArquivados);
+    b.textContent=state.showArquivados?'Ver ativos':'Arquivados';
+  }
+  await loadLeads();
+  render();
+}
+
 let reloadTimer=null;
 function subscribeRealtime(){
   try{
