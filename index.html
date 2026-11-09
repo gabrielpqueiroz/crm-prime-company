@@ -365,18 +365,18 @@ tbody tr:hover{background:var(--paper)}
 .op-head select{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 11px;color:var(--ink);outline:none;cursor:pointer}
 .op-wrap{overflow-x:auto}
 .op-wrap tbody tr{cursor:default}
-.op-wrap th{cursor:default}
-.op-cel{width:130px;white-space:nowrap}
+.op-wrap th{cursor:default;white-space:normal}
+.op-cel{width:96px;white-space:nowrap}
 .op-nome{text-align:left;font-weight:600;font-size:13.5px}
 .op-nome:hover{color:var(--coffee-500);text-decoration:underline}
 .op-check{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
 .op-check input{position:absolute;opacity:0;width:0;height:0}
 .op-box{width:24px;height:24px;border-radius:7px;border:1.5px solid #d3c6b3;background:#fff;display:grid;place-items:center;color:transparent;font-weight:700;font-size:14px;transition:.12s}
+.op-check.fora .op-box{border-style:dashed;background:var(--paper)}
 .op-check:hover .op-box{border-color:var(--gold)}
 .op-check input:checked+.op-box{background:var(--green);border-color:var(--green);color:#fff}
 .op-check input:focus-visible+.op-box{box-shadow:0 0 0 3px rgba(194,160,99,.35)}
 .op-hora{font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.op-na{display:inline-block;width:24px;text-align:center;color:#c9bcaa}
 .op-obs{display:block;width:100%;min-width:240px;min-height:36px;padding:7px 10px;border:1px solid transparent;border-radius:8px;background:var(--paper);color:var(--ink);line-height:1.4;resize:none;outline:none;field-sizing:content;transition:.12s}
 .op-obs:hover{border-color:var(--line)}
 .op-obs:focus{border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(194,160,99,.13)}
@@ -1464,9 +1464,15 @@ function viewClientes(){
 }
 
 /* ---------- OPERACIONAL ---------- */
-/* Check diário das campanhas (tabela checks_diarios, sql/003). Uma linha
-   por cliente por dia; as colunas valem só para os serviços do plano. */
-const OP_CANAIS=[{id:'google',svc:'Google Ads'},{id:'meta',svc:'Meta Ads'}];
+/* Check diário dos clientes (tabela checks_diarios, sql/003 e 004). Uma
+   linha por cliente por dia. Todo cliente tem todos os checks, mas só os
+   serviços do plano contam como pendência. */
+const OP_CANAIS=[
+  {id:'google',svc:'Google Ads',label:'Google Ads'},
+  {id:'meta',svc:'Meta Ads',label:'Meta Ads'},
+  {id:'social',svc:'Social Media',label:'Social Media'},
+  {id:'gmb',svc:'Google Meu Negócio',label:'Google My Business'},
+];
 let opDiaSel=null, opFiltro='todos', opLogado=false, opDiaDaTela=null;
 let opRenderPendente=false, opReloadTimer=null;
 /* Observação digitada que o banco ainda não confirmou: um reload não pode
@@ -1486,8 +1492,8 @@ async function loadOpChecks(dia){
 }
 function opAssinatura(){
   return JSON.stringify([opHoje(),opDia()].map(d=>Object.entries(state.opChecks[d]||{})
-    .map(([id,r])=>[id,ts(r.google_em),ts(r.meta_em),r.obs||''])
-    .filter(x=>x[1]||x[2]||x[3]).sort()));
+    .map(([id,r])=>[id,...OP_CANAIS.map(k=>ts(r[k.id+'_em'])),r.obs||''])
+    .filter(x=>x.slice(1).some(Boolean)).sort()));
 }
 /* Só redesenha se algo visível mudou: o eco do próprio salvamento volta
    pelo realtime igual ao que já está na tela. */
@@ -1576,15 +1582,14 @@ function viewOperacional(){
     if(q&&![c.nome,c.empresa,c.resp,...c.servicos].some(v=>(v||'').toLowerCase().includes(q)))return false;
     return opFiltro!=='pendentes'||opPendencias(c,rows[c.id]).length;
   }).sort((a,b)=>{
-    const semAds=c=>OP_CANAIS.some(k=>c.servicos.includes(k.svc))?0:1;
-    return semAds(a)-semAds(b)||a.nome.localeCompare(b.nome,'pt-BR');
+    const semPlano=c=>OP_CANAIS.some(k=>c.servicos.includes(k.svc))?0:1;
+    return semPlano(a)-semPlano(b)||a.nome.localeCompare(b.nome,'pt-BR');
   });
   const hora=iso=>new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   const celula=(c,r,k)=>{
-    if(!c.servicos.includes(k.svc))return `<td class="op-cel"><span class="op-na" title="${k.svc} não está no plano">—</span></td>`;
-    const em=r[k.id+'_em'];
-    const titulo=em?`Verificado em ${new Date(em).toLocaleString('pt-BR')}${r[k.id+'_por']?' por '+r[k.id+'_por']:''}`:'Marcar como verificado';
-    return `<td class="op-cel"><label class="op-check" title="${esc(titulo)}"><input type="checkbox" ${em?'checked':''} onchange="opToggle('${c.id}','${dia}','${k.id}')" aria-label="${k.svc} verificado: ${esc(c.nome)}"/><span class="op-box">✓</span>${em?`<span class="op-hora">${hora(em)}</span>`:''}</label></td>`;
+    const em=r[k.id+'_em'],noPlano=c.servicos.includes(k.svc);
+    const titulo=em?`Verificado em ${new Date(em).toLocaleString('pt-BR')}${r[k.id+'_por']?' por '+r[k.id+'_por']:''}`:noPlano?'Marcar como verificado':`${k.label} não está no plano: não conta como pendência`;
+    return `<td class="op-cel"><label class="op-check ${noPlano?'':'fora'}" title="${esc(titulo)}"><input type="checkbox" ${em?'checked':''} onchange="opToggle('${c.id}','${dia}','${k.id}')" aria-label="${k.label} verificado: ${esc(c.nome)}"/><span class="op-box">✓</span>${em?`<span class="op-hora">${hora(em)}</span>`:''}</label></td>`;
   };
   const linhas=L.map(c=>{
     const r=rows[c.id]||{};
@@ -1594,7 +1599,7 @@ function viewOperacional(){
       <td><textarea class="op-obs" rows="1" placeholder="Adicionar observação..." aria-label="Observações: ${esc(c.nome)}" oninput="opObsInput(this,'${c.id}','${dia}')" onblur="opObsBlur('${c.id}','${dia}')">${esc(r.obs)}</textarea></td>
     </tr>`;
   }).join('');
-  const resumo=!p.total?'Nenhum cliente com Google ou Meta Ads':p.clientesPendentes?`${p.clientesPendentes} ${p.clientesPendentes===1?'cliente pendente':'clientes pendentes'}`:'Tudo verificado ✓';
+  const resumo=!p.total?'Nenhum serviço marcado nos planos':p.clientesPendentes?`${p.clientesPendentes} ${p.clientesPendentes===1?'cliente pendente':'clientes pendentes'}`:'Tudo verificado ✓';
   return `
   <div class="card op-head">
     <div class="op-nav">
@@ -1613,7 +1618,7 @@ function viewOperacional(){
     </select>
   </div>
   ${L.length?`<div class="table-wrap op-wrap"><table>
-    <thead><tr><th>Cliente</th>${OP_CANAIS.map(k=>`<th>${k.svc}</th>`).join('')}<th>Observações</th></tr></thead>
+    <thead><tr><th>Cliente</th>${OP_CANAIS.map(k=>`<th>${k.label}</th>`).join('')}<th>Observações</th></tr></thead>
     <tbody>${linhas}</tbody></table></div>`:`<div class="empty" style="padding:30px"><div class="e-s">${opFiltro==='pendentes'&&!q?'Nenhuma pendência neste dia.':'Nenhum cliente encontrado.'}</div></div>`}`;
 }
 
