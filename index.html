@@ -352,6 +352,34 @@ tbody tr:hover{background:var(--paper)}
 .fx-input:focus{border-color:var(--gold)}
 .setup-box{background:#fff;border:1px dashed var(--gold);border-radius:var(--radius);padding:28px;max-width:620px;margin:30px auto;line-height:1.6}
 .setup-box code{background:var(--paper-2);padding:2px 7px;border-radius:5px;font-size:12.5px}
+/* ============ OPERACIONAL ============ */
+.op-head{display:flex;align-items:center;gap:24px;padding:16px 20px;margin-bottom:16px;flex-wrap:wrap}
+.op-nav{display:flex;align-items:center;gap:8px}
+.op-data{min-width:250px;text-align:center}
+.op-data b{display:block;font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:700;line-height:1.1}
+.op-data b::first-letter{text-transform:uppercase}
+.op-data span{font-size:12px;color:var(--ink-soft)}
+.op-prog{flex:1;min-width:220px}
+.op-prog-t{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:6px;color:var(--ink-soft)}
+.op-prog-t b{color:var(--ink)}
+.op-head select{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 11px;color:var(--ink);outline:none;cursor:pointer}
+.op-wrap{overflow-x:auto}
+.op-wrap tbody tr{cursor:default}
+.op-wrap th{cursor:default}
+.op-cel{width:130px;white-space:nowrap}
+.op-nome{text-align:left;font-weight:600;font-size:13.5px}
+.op-nome:hover{color:var(--coffee-500);text-decoration:underline}
+.op-check{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.op-check input{position:absolute;opacity:0;width:0;height:0}
+.op-box{width:24px;height:24px;border-radius:7px;border:1.5px solid #d3c6b3;background:#fff;display:grid;place-items:center;color:transparent;font-weight:700;font-size:14px;transition:.12s}
+.op-check:hover .op-box{border-color:var(--gold)}
+.op-check input:checked+.op-box{background:var(--green);border-color:var(--green);color:#fff}
+.op-check input:focus-visible+.op-box{box-shadow:0 0 0 3px rgba(194,160,99,.35)}
+.op-hora{font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.op-na{display:inline-block;width:24px;text-align:center;color:#c9bcaa}
+.op-obs{display:block;width:100%;min-width:240px;min-height:36px;padding:7px 10px;border:1px solid transparent;border-radius:8px;background:var(--paper);color:var(--ink);line-height:1.4;resize:none;outline:none;field-sizing:content;transition:.12s}
+.op-obs:hover{border-color:var(--line)}
+.op-obs:focus{border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(194,160,99,.13)}
 @media(max-width:1080px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.dash-row,.agenda-grid{grid-template-columns:1fr}.form-grid,.detail-grid{grid-template-columns:1fr}}
 @media(max-width:780px){.sidebar{display:none}}
 ::-webkit-scrollbar{width:9px;height:9px}
@@ -405,6 +433,11 @@ tbody tr:hover{background:var(--paper)}
       Clientes
       <span class="badge" id="navCliCount" style="display:none">0</span>
     </button>
+    <button data-view="operacional">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Operacional
+      <span class="badge" id="navOpCount" style="display:none">0</span>
+    </button>
     <button data-view="agenda">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Agenda & Follow-ups
@@ -438,7 +471,7 @@ tbody tr:hover{background:var(--paper)}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
       Arquivados
     </button>
-    <button class="btn" onclick="currentView==='clientes'?openCliente():openLead()">
+    <button class="btn" onclick="currentView==='clientes'||currentView==='operacional'?openCliente():openLead()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span id="btnNovoTxt">Novo Lead</span>
     </button>
@@ -643,7 +676,7 @@ const STAGES = [
 const SRC_COLORS={'Outbound':'#5b7a96','Inbound':'#5d8a5e','Indicação':'#c69749','Campanha de Tráfego':'#7159a0','Evento':'#b4524a'};
 const TEMP={hot:'🔥',warm:'🟡',cold:'❄️'};
 
-let state={leads:[],clientes:[],showArquivados:false};
+let state={leads:[],clientes:[],opChecks:{},showArquivados:false};
 let currentView='dashboard';
 let editingId=null, detailId=null;
 let sortCol='updated_at', sortDir=-1;
@@ -692,10 +725,11 @@ async function onLogin(session){
   document.getElementById('userEmail').textContent=session.user.email;
   document.getElementById('loginScreen').classList.add('hide');
   document.getElementById('boot').classList.remove('hide');
-  await Promise.all([loadLeads(),loadClientes()]);
+  await Promise.all([loadLeads(),loadClientes(),loadOpChecks(opHoje())]);
   document.getElementById('boot').classList.add('hide');
   render();
   subscribeRealtime();
+  opLogado=true;
   gcalBootstrap();
 }
 async function logout(){
@@ -749,6 +783,10 @@ function subscribeRealtime(){
       clearTimeout(cliReloadTimer);
       cliReloadTimer=setTimeout(async()=>{await loadClientes();render()},400);
     }).subscribe();
+    sb.channel('checks-rt').on('postgres_changes',{event:'*',schema:'public',table:'checks_diarios'},()=>{
+      clearTimeout(opReloadTimer);
+      opReloadTimer=setTimeout(opRecarregar,400);
+    }).subscribe();
   }catch(e){/* realtime opcional */}
 }
 async function dbInsert(row){
@@ -773,6 +811,7 @@ const TITLES={
   pipeline:['Pipeline','Arraste os cards entre as etapas'],
   leads:['Leads','Sua base completa de contatos'],
   clientes:['Clientes','Carteira ativa, recorrência e churn'],
+  operacional:['Operacional','Check diário das campanhas dos clientes ativos'],
   agenda:['Agenda & Follow-ups','O que precisa de atenção agora'],
 };
 document.getElementById('nav').addEventListener('click',e=>{
@@ -781,11 +820,12 @@ document.getElementById('nav').addEventListener('click',e=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x===b));
   document.getElementById('pageTitle').textContent=TITLES[currentView][0];
   document.getElementById('pageSub').textContent=TITLES[currentView][1];
-  const cli=currentView==='clientes';
+  const cli=currentView==='clientes'||currentView==='operacional';
   document.getElementById('btnNovoTxt').textContent=cli?'Novo Cliente':'Novo Lead';
   document.getElementById('globalSearch').placeholder=cli?'Buscar cliente...':'Buscar lead...';
   document.getElementById('btnArquivados').classList.toggle('hide',cli);
   render();
+  if(currentView==='operacional')opGarantirDia();
 });
 function updateBadges(){
   const active=state.leads.filter(l=>l.stage!=='fechado'&&l.stage!=='perdido').length;
@@ -796,17 +836,26 @@ function updateBadges(){
   const ativos=state.clientes.filter(c=>c.status==='ativo').length;
   const cb=document.getElementById('navCliCount');
   cb.textContent=ativos; cb.style.display=ativos?'':'none';
+  opDiaDaTela=opHoje();
+  const opFalta=opProgresso(opDiaDaTela).clientesPendentes;
+  const ob=document.getElementById('navOpCount');
+  ob.textContent=opFalta; ob.style.display=opFalta?'':'none';
 }
 function daysUntil(d){if(!d)return 9999;const a=new Date(d);a.setHours(0,0,0,0);const b=new Date();b.setHours(0,0,0,0);return Math.round((a-b)/86400000)}
 
 /* ===================== RENDER ===================== */
 function render(){
   updateBadges();
+  /* Redesenhar a tela enquanto alguém digita uma observação derrubaria o
+     foco do campo; o redesenho fica para quando o campo perder o foco. */
+  if(currentView==='operacional'&&document.activeElement&&document.activeElement.classList.contains('op-obs')){opRenderPendente=true;return}
+  opRenderPendente=false;
   const c=document.getElementById('content');
   if(currentView==='dashboard')c.innerHTML=viewDashboard();
   else if(currentView==='pipeline'){c.innerHTML=viewPipeline();wireDnD();}
   else if(currentView==='leads')c.innerHTML=viewLeads();
   else if(currentView==='clientes')c.innerHTML=viewClientes();
+  else if(currentView==='operacional')c.innerHTML=viewOperacional();
   else if(currentView==='agenda')c.innerHTML=viewAgenda();
 }
 function filtered(){
@@ -1412,6 +1461,160 @@ function viewClientes(){
   ${L.length?`<div class="table-wrap"><table>
     <thead><tr><th>Cliente</th><th>Plano</th><th>Mensal</th><th>Canal</th><th>Vencimento</th><th>Desde</th><th>Contrato até</th><th>Status</th></tr></thead>
     <tbody>${rowsHTML}</tbody></table></div>`:'<div class="empty" style="padding:30px"><div class="e-s">Nenhum cliente com esses filtros.</div></div>'}`;
+}
+
+/* ---------- OPERACIONAL ---------- */
+/* Check diário das campanhas (tabela checks_diarios, sql/003). Uma linha
+   por cliente por dia; as colunas valem só para os serviços do plano. */
+const OP_CANAIS=[{id:'google',svc:'Google Ads'},{id:'meta',svc:'Meta Ads'}];
+let opDiaSel=null, opFiltro='todos', opLogado=false, opDiaDaTela=null;
+let opRenderPendente=false, opReloadTimer=null;
+/* Observação digitada que o banco ainda não confirmou: um reload não pode
+   trocar o texto da pessoa por uma versão mais antiga. */
+const opObsRascunho={}, opObsTimers={};
+
+function opHoje(){return ymd(new Date())}
+/* null = "sempre hoje", para a tela virar de dia sozinha se ficar aberta. */
+function opDia(){return opDiaSel||opHoje()}
+async function loadOpChecks(dia){
+  const {data,error}=await sb.from('checks_diarios').select('*').eq('dia',dia);
+  if(error){state.semTabelaChecks=/checks_diarios/i.test(error.message||'');if(!state.semTabelaChecks)toast('Erro ao carregar os checks: '+error.message,true);return}
+  state.semTabelaChecks=false;
+  const m={};(data||[]).forEach(r=>{m[r.cliente_id]=r});
+  Object.keys(opObsRascunho).forEach(k=>{const [d,cid]=k.split('|');if(d===dia)(m[cid]=m[cid]||{}).obs=opObsRascunho[k]});
+  state.opChecks[dia]=m;
+}
+function opAssinatura(){
+  return JSON.stringify([opHoje(),opDia()].map(d=>Object.entries(state.opChecks[d]||{})
+    .map(([id,r])=>[id,ts(r.google_em),ts(r.meta_em),r.obs||''])
+    .filter(x=>x[1]||x[2]||x[3]).sort()));
+}
+/* Só redesenha se algo visível mudou: o eco do próprio salvamento volta
+   pelo realtime igual ao que já está na tela. */
+async function opRecarregar(){
+  const antes=opAssinatura();
+  await Promise.all([...new Set([opHoje(),opDia()])].map(loadOpChecks));
+  if(opAssinatura()!==antes||opDiaDaTela!==opHoje())render();
+}
+async function opGarantirDia(){
+  const falta=[...new Set([opHoje(),opDia()])].filter(d=>!state.opChecks[d]);
+  if(falta.length){await Promise.all(falta.map(loadOpChecks));render()}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&opLogado)opRecarregar()});
+
+function opClientes(dia){
+  const rows=state.opChecks[dia]||{},hoje=opHoje();
+  /* Em dias passados, quem saiu da carteira continua aparecendo se foi verificado. */
+  return state.clientes.filter(c=>(c.status==='ativo'&&(!c.data_inicio||c.data_inicio<=dia))||(dia!==hoje&&rows[c.id]));
+}
+function opPendencias(c,r){return OP_CANAIS.filter(k=>c.servicos.includes(k.svc)&&!(r&&r[k.id+'_em']))}
+function opProgresso(dia){
+  const rows=state.opChecks[dia]||{};
+  let total=0,feitos=0,clientesPendentes=0;
+  opClientes(dia).forEach(c=>{
+    const n=OP_CANAIS.filter(k=>c.servicos.includes(k.svc)).length,p=opPendencias(c,rows[c.id]).length;
+    total+=n;feitos+=n-p;if(p)clientesPendentes++;
+  });
+  return {total,feitos,clientesPendentes};
+}
+
+function opRow(dia,cid){const m=state.opChecks[dia]=state.opChecks[dia]||{};return m[cid]=m[cid]||{}}
+async function opUpsert(cid,dia,campos){
+  /* Só as colunas enviadas mudam no conflito, então duas pessoas podem
+     marcar Google e Meta do mesmo cliente ao mesmo tempo. */
+  const {error}=await sb.from('checks_diarios').upsert({cliente_id:cid,dia,...campos,updated_at:nowISO()},{onConflict:'cliente_id,dia'});
+  if(error){toast('Erro ao salvar: '+error.message,true);return false}
+  return true;
+}
+async function opToggle(cid,dia,canal){
+  const em=canal+'_em',por=canal+'_por',r=opRow(dia,cid);
+  const antes={[em]:r[em]||null,[por]:r[por]||null};
+  const novo=r[em]?{[em]:null,[por]:null}:{[em]:nowISO(),[por]:document.getElementById('userEmail').textContent};
+  Object.assign(r,novo);render();
+  if(!await opUpsert(cid,dia,novo)){Object.assign(opRow(dia,cid),antes);render()}
+}
+function opObsInput(el,cid,dia){
+  const k=dia+'|'+cid;
+  opRow(dia,cid).obs=el.value;opObsRascunho[k]=el.value;
+  clearTimeout(opObsTimers[k]);
+  opObsTimers[k]=setTimeout(()=>opObsSalvar(cid,dia),900);
+}
+async function opObsSalvar(cid,dia){
+  const k=dia+'|'+cid;
+  clearTimeout(opObsTimers[k]);
+  if(!(k in opObsRascunho))return;
+  const val=opObsRascunho[k];
+  if(await opUpsert(cid,dia,{obs:val})&&opObsRascunho[k]===val)delete opObsRascunho[k];
+}
+function opObsBlur(cid,dia){
+  opObsSalvar(cid,dia);
+  if(opRenderPendente)setTimeout(render,200);
+}
+async function opMudarDia(delta){
+  const d=new Date(opDia()+'T00:00');d.setDate(d.getDate()+delta);
+  const iso=ymd(d),hoje=opHoje();
+  if(iso>hoje)return;
+  await opIrPara(iso===hoje?null:iso);
+}
+async function opIrPara(dia){
+  opDiaSel=dia;
+  await loadOpChecks(opDia());
+  render();
+}
+
+function viewOperacional(){
+  if(state.semTabelaClientes||state.semTabelaChecks)return `<div class="setup-box">
+    <h3 style="font-size:24px;margin-bottom:8px">Falta criar a tabela de checks</h3>
+    <p>No Supabase, abra <b>SQL Editor → New query</b>, cole o conteúdo de <code>${state.semTabelaClientes?'sql/002-clientes.sql':'sql/003-checks-diarios.sql'}</code> e clique em <b>Run</b>. Depois recarregue esta página.</p>
+  </div>`;
+  const dia=opDia(),hoje=opHoje(),ehHoje=dia===hoje,rows=state.opChecks[dia]||{};
+  const todos=opClientes(dia);
+  if(!todos.length&&ehHoje)return emptyState('Nenhum cliente ativo','Os checks aparecem aqui para cada cliente com status Ativo.');
+  const p=opProgresso(dia),pct=p.total?Math.round(p.feitos/p.total*100):0;
+  const q=(document.getElementById('globalSearch').value||'').toLowerCase().trim();
+  const L=todos.filter(c=>{
+    if(q&&![c.nome,c.empresa,c.resp,...c.servicos].some(v=>(v||'').toLowerCase().includes(q)))return false;
+    return opFiltro!=='pendentes'||opPendencias(c,rows[c.id]).length;
+  }).sort((a,b)=>{
+    const semAds=c=>OP_CANAIS.some(k=>c.servicos.includes(k.svc))?0:1;
+    return semAds(a)-semAds(b)||a.nome.localeCompare(b.nome,'pt-BR');
+  });
+  const hora=iso=>new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const celula=(c,r,k)=>{
+    if(!c.servicos.includes(k.svc))return `<td class="op-cel"><span class="op-na" title="${k.svc} não está no plano">—</span></td>`;
+    const em=r[k.id+'_em'];
+    const titulo=em?`Verificado em ${new Date(em).toLocaleString('pt-BR')}${r[k.id+'_por']?' por '+r[k.id+'_por']:''}`:'Marcar como verificado';
+    return `<td class="op-cel"><label class="op-check" title="${esc(titulo)}"><input type="checkbox" ${em?'checked':''} onchange="opToggle('${c.id}','${dia}','${k.id}')" aria-label="${k.svc} verificado: ${esc(c.nome)}"/><span class="op-box">✓</span>${em?`<span class="op-hora">${hora(em)}</span>`:''}</label></td>`;
+  };
+  const linhas=L.map(c=>{
+    const r=rows[c.id]||{};
+    return `<tr>
+      <td><button class="op-nome" onclick="openCliente('${c.id}')">${esc(c.nome)}</button>${c.empresa?`<div class="t-comp">${esc(c.empresa)}</div>`:''}</td>
+      ${OP_CANAIS.map(k=>celula(c,r,k)).join('')}
+      <td><textarea class="op-obs" rows="1" placeholder="Adicionar observação..." aria-label="Observações: ${esc(c.nome)}" oninput="opObsInput(this,'${c.id}','${dia}')" onblur="opObsBlur('${c.id}','${dia}')">${esc(r.obs)}</textarea></td>
+    </tr>`;
+  }).join('');
+  const resumo=!p.total?'Nenhum cliente com Google ou Meta Ads':p.clientesPendentes?`${p.clientesPendentes} ${p.clientesPendentes===1?'cliente pendente':'clientes pendentes'}`:'Tudo verificado ✓';
+  return `
+  <div class="card op-head">
+    <div class="op-nav">
+      <button class="btn ghost sm" onclick="opMudarDia(-1)" aria-label="Dia anterior">‹</button>
+      <div class="op-data"><b>${new Date(dia+'T00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}</b><span>${ehHoje?'Hoje':'Histórico'}</span></div>
+      <button class="btn ghost sm" onclick="opMudarDia(1)" aria-label="Próximo dia" ${ehHoje?'disabled':''}>›</button>
+      ${ehHoje?'':'<button class="btn ghost sm" onclick="opIrPara(null)">Hoje</button>'}
+    </div>
+    <div class="op-prog">
+      <div class="op-prog-t"><span><b>${p.feitos} de ${p.total}</b> checks</span><span>${resumo}</span></div>
+      <div class="funnel-bar"><span style="width:${pct}%"></span></div>
+    </div>
+    <select onchange="opFiltro=this.value;render()" aria-label="Filtrar clientes">
+      <option value="todos" ${opFiltro==='todos'?'selected':''}>Todos os clientes</option>
+      <option value="pendentes" ${opFiltro==='pendentes'?'selected':''}>Só pendentes</option>
+    </select>
+  </div>
+  ${L.length?`<div class="table-wrap op-wrap"><table>
+    <thead><tr><th>Cliente</th>${OP_CANAIS.map(k=>`<th>${k.svc}</th>`).join('')}<th>Observações</th></tr></thead>
+    <tbody>${linhas}</tbody></table></div>`:`<div class="empty" style="padding:30px"><div class="e-s">${opFiltro==='pendentes'&&!q?'Nenhuma pendência neste dia.':'Nenhum cliente encontrado.'}</div></div>`}`;
 }
 
 /* ---------- CLIENTE · FORM ---------- */
