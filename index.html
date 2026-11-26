@@ -161,7 +161,9 @@ input,select,textarea{font-family:inherit;font-size:14px}
 .lc-top{display:flex;align-items:flex-start;gap:8px}
 .lc-name{font-weight:700;font-size:14px;line-height:1.2}
 .lc-comp{font-size:12px;color:var(--ink-soft);margin-top:1px}
-.lc-temp{margin-left:auto;font-size:14px;flex-shrink:0}
+.lc-temp{margin-left:auto;font-size:14px;flex-shrink:0;display:flex;align-items:center;gap:6px}
+.lv{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:6px;font-size:11px;font-weight:800;color:#fff;line-height:1}
+.lv-A{background:#5d8a5e}.lv-B{background:#5b7a96}.lv-C{background:#c69749}.lv-D{background:#9a8f84}
 .lc-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .chip{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--paper-2);color:var(--ink-soft)}
 .chip.val{background:var(--green-bg);color:var(--green)}
@@ -501,13 +503,17 @@ tbody tr:hover{background:var(--paper)}
         <div class="fld"><label>Campanha / Canal</label><input id="f_campanha" placeholder="Ex: Cold call, Meta Ads, LinkedIn"/></div>
         <div class="fld"><label>Serviço de interesse</label><input id="f_servico" placeholder="Ex: Gestão de tráfego, Social media"/></div>
         <div class="fld"><label>Etapa</label><select id="f_stage"></select></div>
+        <div class="fld"><label>Nível do lead</label>
+          <select id="f_nivel"><option value="">— Sem nível</option><option value="A">Lead A</option><option value="B">Lead B</option><option value="C">Lead C</option><option value="D">Lead D</option></select>
+        </div>
         <div class="fld"><label>Temperatura</label>
           <select id="f_temp"><option value="hot">🔥 Quente</option><option value="warm">🟡 Morno</option><option value="cold">❄️ Frio</option></select>
         </div>
-        <div class="fld"><label>Valor da proposta (R$)</label><input id="f_valor" type="number" min="0" placeholder="0"/></div>
+        <div class="fld"><label>Responsável</label><input id="f_resp" placeholder="Quem cuida deste lead"/></div>
+        <div class="fld"><label>Valor da proposta</label><input id="f_valor" type="number" min="0" step="0.01" placeholder="0"/></div>
+        <div class="fld"><label>Moeda</label><select id="f_moeda"><option value="USD">US$ · dólar</option><option value="BRL">R$ · real</option></select></div>
         <div class="fld"><label>Próximo follow-up</label><input id="f_followup" type="date"/></div>
         <div class="fld"><label>Reunião agendada para</label><input id="f_reuniao" type="datetime-local"/></div>
-        <div class="fld"><label>Responsável</label><input id="f_resp" placeholder="Quem cuida deste lead"/></div>
         <div class="fld full"><label>Observações</label><textarea id="f_notas" placeholder="Anotações sobre o lead, dores, contexto..."></textarea></div>
       </div>
     </div>
@@ -675,12 +681,20 @@ const STAGES = [
 ];
 const SRC_COLORS={'Outbound':'#5b7a96','Inbound':'#5d8a5e','Indicação':'#c69749','Campanha de Tráfego':'#7159a0','Evento':'#b4524a'};
 const TEMP={hot:'🔥',warm:'🟡',cold:'❄️'};
+const NIVEIS=['A','B','C','D'];
+/* Valor do lead na moeda dele. Lead sem moeda (anterior ao sql/005) é BRL. */
+function leadMoeda(l){return l.moeda==='USD'?'USD':'BRL'}
+function leadValor(l){return valorMoeda(l.valor,leadMoeda(l))}
+/* Pra somar leads em moedas diferentes: tudo convertido pra USD pela cotação. */
+function leadUSD(l){const v=Number(l.valor)||0;return leadMoeda(l)==='USD'?v:v/cotacao()}
+function somaUSD(arr){return arr.reduce((a,l)=>a+leadUSD(l),0)}
+function nivelBadge(l){return NIVEIS.includes(l.nivel)?`<span class="lv lv-${l.nivel}" title="Lead ${l.nivel}">${l.nivel}</span>`:''}
 
 let state={leads:[],clientes:[],opChecks:{},showArquivados:false};
 let currentView='dashboard';
 let editingId=null, detailId=null;
 let sortCol='updated_at', sortDir=-1;
-let filterStage='', filterOrigem='';
+let filterStage='', filterOrigem='', filterNivel='';
 let agendaMode='mes';
 let agendaRef=new Date(); agendaRef.setHours(0,0,0,0);
 
@@ -872,14 +886,14 @@ function viewDashboard(){
   if(!L.length)return emptyState('Comece adicionando seu primeiro lead','Clique em “Novo Lead” no topo para cadastrar.');
   const active=L.filter(l=>l.stage!=='fechado'&&l.stage!=='perdido');
   const won=L.filter(l=>l.stage==='fechado');
-  const pipeVal=active.reduce((s,l)=>s+(Number(l.valor)||0),0);
-  const wonVal=won.reduce((s,l)=>s+(Number(l.valor)||0),0);
+  const pipeVal=somaUSD(active);
+  const wonVal=somaUSD(won);
   const closedTotal=L.filter(l=>l.stage==='fechado'||l.stage==='perdido').length;
   const convRate=closedTotal?Math.round(won.length/closedTotal*100):0;
   const reunioes=L.filter(l=>l.reuniao&&new Date(l.reuniao)>=new Date()).length;
   const funnel=STAGES.filter(s=>s.id!=='perdido').map(s=>{
     const items=L.filter(l=>l.stage===s.id);
-    return {...s,count:items.length,val:items.reduce((a,l)=>a+(Number(l.valor)||0),0)};
+    return {...s,count:items.length,val:somaUSD(items)};
   });
   const maxF=Math.max(1,...funnel.map(f=>f.count));
   const srcMap={};L.forEach(l=>{srcMap[l.origem]=(srcMap[l.origem]||0)+1});
@@ -889,8 +903,8 @@ function viewDashboard(){
   return `
   <div class="kpi-grid">
     <div class="kpi"><div class="k-label">Leads ativos</div><div class="k-val">${active.length}</div><div class="k-foot">${L.length} no total</div></div>
-    <div class="kpi"><div class="k-label">Valor no pipeline</div><div class="k-val">${money(pipeVal)}</div><div class="k-foot">em ${active.length} oportunidades</div></div>
-    <div class="kpi"><div class="k-label">Fechado</div><div class="k-val" style="color:var(--green)">${money(wonVal)}</div><div class="k-foot"><b>${won.length}</b> negócios ganhos</div></div>
+    <div class="kpi"><div class="k-label">Valor no pipeline</div><div class="k-val">${usd(pipeVal)}</div><div class="k-foot">em ${active.length} oportunidades · ≈ ${money(pipeVal*cotacao())}</div></div>
+    <div class="kpi"><div class="k-label">Fechado</div><div class="k-val" style="color:var(--green)">${usd(wonVal)}</div><div class="k-foot"><b>${won.length}</b> negócios ganhos · ≈ ${money(wonVal*cotacao())}</div></div>
     <div class="kpi"><div class="k-label">Taxa de conversão</div><div class="k-val">${convRate}%</div><div class="k-foot">${reunioes} reuniões futuras</div></div>
   </div>
   <div class="dash-row">
@@ -899,7 +913,7 @@ function viewDashboard(){
       <div class="card-b">
         ${funnel.map(f=>`
           <div class="funnel-stage">
-            <div class="funnel-top"><span class="fs-name">${f.name}</span><span class="fs-meta">${f.count} · ${money(f.val)}</span></div>
+            <div class="funnel-top"><span class="fs-name">${f.name}</span><span class="fs-meta">${f.count} · ${usd(f.val)}</span></div>
             <div class="funnel-bar"><span style="width:${f.count/maxF*100}%"></span></div>
           </div>`).join('')}
       </div>
@@ -937,10 +951,10 @@ function viewPipeline(){
   const L=filtered();
   return `<div class="board">${STAGES.map(s=>{
     const items=L.filter(l=>l.stage===s.id).sort((a,b)=>ts(b.updated_at)-ts(a.updated_at));
-    const val=items.reduce((a,l)=>a+(Number(l.valor)||0),0);
+    const val=somaUSD(items);
     return `<div class="col">
       <div class="col-h"><span class="c-dot" style="background:${s.color}"></span><span class="c-name">${s.name}</span><span class="c-count">${items.length}</span></div>
-      ${val?`<div class="col-sum">${money(val)}</div>`:'<div class="col-sum">&nbsp;</div>'}
+      ${val?`<div class="col-sum" title="Soma convertida pra dólar (R$ pela cotação)">${usd(val)}</div>`:'<div class="col-sum">&nbsp;</div>'}
       <div class="col-body" data-stage="${s.id}">
         ${items.map(cardHTML).join('')}
       </div>
@@ -958,10 +972,10 @@ function cardHTML(l){
   return `<div class="lead-card ${l.temp||'warm'}" draggable="true" data-id="${l.id}" onclick="openDetail('${l.id}')">
     <div class="lc-top">
       <div><div class="lc-name">${esc(l.nome)}</div>${l.empresa?`<div class="lc-comp">${esc(l.empresa)}</div>`:''}</div>
-      <div class="lc-temp">${TEMP[l.temp||'warm']}</div>
+      <div class="lc-temp">${nivelBadge(l)}${TEMP[l.temp||'warm']}</div>
     </div>
     <div class="lc-meta">
-      ${l.valor?`<span class="chip val">${money(l.valor)}</span>`:''}
+      ${l.valor?`<span class="chip val">${leadValor(l)}</span>`:''}
       <span class="chip src">${esc(l.origem||'')}</span>
       ${l.servico?`<span class="chip">${esc(l.servico)}</span>`:''}
       ${l.files&&l.files.length?`<span class="chip">📎 ${l.files.length}</span>`:''}
@@ -998,9 +1012,11 @@ function viewLeads(){
   let L=filtered();
   if(filterStage)L=L.filter(l=>l.stage===filterStage);
   if(filterOrigem)L=L.filter(l=>l.origem===filterOrigem);
+  if(filterNivel)L=L.filter(l=>filterNivel==='-'?!NIVEIS.includes(l.nivel):l.nivel===filterNivel);
   L=L.slice().sort((a,b)=>{
     let va=a[sortCol],vb=b[sortCol];
-    if(sortCol==='valor'){va=Number(va)||0;vb=Number(vb)||0}
+    if(sortCol==='valor'){va=leadUSD(a);vb=leadUSD(b)}
+    else if(sortCol==='nivel'){va=NIVEIS.includes(va)?va:'Z';vb=NIVEIS.includes(vb)?vb:'Z'}
     else{va=(va||'').toString().toLowerCase();vb=(vb||'').toString().toLowerCase()}
     return va<vb?-sortDir:va>vb?sortDir:0;
   });
@@ -1014,13 +1030,18 @@ function viewLeads(){
       <option value="">Todas as origens</option>
       ${origens.map(o=>`<option ${filterOrigem===o?'selected':''}>${esc(o)}</option>`).join('')}
     </select>
+    <select onchange="filterNivel=this.value;render()">
+      <option value="">Todos os níveis</option>
+      ${NIVEIS.map(n=>`<option value="${n}" ${filterNivel===n?'selected':''}>Lead ${n}</option>`).join('')}
+      <option value="-" ${filterNivel==='-'?'selected':''}>Sem nível</option>
+    </select>
     <span style="color:var(--ink-soft);font-size:12.5px;margin-left:auto">${L.length} lead(s)</span>
   </div>`;
   if(!state.leads.length)return emptyState('Nenhum lead cadastrado','Adicione seu primeiro lead no botão acima.');
   const head=(c,t)=>`<th onclick="sortBy('${c}')">${t} ${sortCol===c?(sortDir>0?'↑':'↓'):''}</th>`;
   return filters+`<div class="table-wrap"><table>
     <thead><tr>
-      ${head('nome','Lead')}${head('origem','Origem')}${head('stage','Etapa')}
+      ${head('nome','Lead')}${head('nivel','Nível')}${head('origem','Origem')}${head('stage','Etapa')}
       ${head('valor','Valor')}<th>Próx. follow-up</th><th>Contato</th>
     </tr></thead><tbody>
     ${L.map(l=>{
@@ -1028,9 +1049,10 @@ function viewLeads(){
       const late=fu!==null&&fu<=0&&l.stage!=='fechado'&&l.stage!=='perdido';
       return `<tr onclick="openDetail('${l.id}')">
         <td><div class="t-name">${TEMP[l.temp||'warm']} ${esc(l.nome)}</div>${l.empresa?`<div class="t-comp">${esc(l.empresa)}</div>`:''}</td>
+        <td>${nivelBadge(l)||'<span style="color:var(--ink-soft)">—</span>'}</td>
         <td><span class="pill" style="background:${(SRC_COLORS[l.origem]||'#999')}1a;color:${SRC_COLORS[l.origem]||'#999'}"><span class="p-dot" style="background:${SRC_COLORS[l.origem]||'#999'}"></span>${esc(l.origem||'')}</span></td>
         <td><span class="pill" style="background:${s.color}1a;color:${s.color}"><span class="p-dot" style="background:${s.color}"></span>${s.name}</span></td>
-        <td style="font-weight:600">${l.valor?money(l.valor):'—'}</td>
+        <td style="font-weight:600">${l.valor?leadValor(l):'—'}</td>
         <td>${l.followup?`<span style="${late?'color:var(--red);font-weight:700':''}">${new Date(l.followup+'T00:00').toLocaleDateString('pt-BR')}${late?(fu<0?` (${-fu}d)`:' (hoje)'):''}</span>`:'—'}</td>
         <td>${l.telefone?`<span style="color:var(--ink-soft)">${esc(l.telefone)}</span>`:l.email?`<span style="color:var(--ink-soft)">${esc(l.email)}</span>`:'—'}</td>
       </tr>`;
@@ -1176,8 +1198,9 @@ function openDetail(id,keepScroll){
         ${l.empresa?`<div class="di-comp">${esc(l.empresa)}</div>`:''}
         <div class="di-tags">
           <span class="pill" style="background:${(SRC_COLORS[l.origem]||'#999')}1a;color:${SRC_COLORS[l.origem]||'#999'}">${esc(l.origem||'')}</span>
+          ${NIVEIS.includes(l.nivel)?`<span class="chip" style="display:inline-flex;align-items:center;gap:5px">${nivelBadge(l)} Lead ${l.nivel}</span>`:''}
           <span class="chip">${TEMP[l.temp||'warm']} ${l.temp==='hot'?'Quente':l.temp==='cold'?'Frio':'Morno'}</span>
-          ${l.valor?`<span class="chip val">${money(l.valor)}</span>`:''}
+          ${l.valor?`<span class="chip val">${leadValor(l)}</span>`:''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
@@ -1243,14 +1266,14 @@ function openLead(id){
     F('f_nome').value=l.nome||'';F('f_empresa').value=l.empresa||'';F('f_telefone').value=l.telefone||'';
     F('f_email').value=l.email||'';F('f_instagram').value=l.instagram||'';F('f_origem').value=l.origem||'Outbound';
     F('f_campanha').value=l.campanha||'';F('f_servico').value=l.servico||'';F('f_stage').value=l.stage||'novo';
-    F('f_temp').value=l.temp||'warm';F('f_valor').value=l.valor!=null?l.valor:'';F('f_followup').value=l.followup||'';
+    F('f_temp').value=l.temp||'warm';F('f_valor').value=l.valor!=null?l.valor:'';F('f_moeda').value=leadMoeda(l);F('f_nivel').value=NIVEIS.includes(l.nivel)?l.nivel:'';F('f_followup').value=l.followup||'';
     F('f_reuniao').value=l.reuniao||'';F('f_resp').value=l.resp||'';F('f_notas').value=l.notas||'';
     closeDetail();
   }else{
     document.getElementById('formTitle').textContent='Novo Lead';
     document.getElementById('formDelBtn').style.display='none';
     ['f_nome','f_empresa','f_telefone','f_email','f_instagram','f_campanha','f_servico','f_valor','f_followup','f_reuniao','f_resp','f_notas'].forEach(i=>F(i).value='');
-    F('f_origem').value='Outbound';F('f_stage').value='novo';F('f_temp').value='warm';
+    F('f_origem').value='Outbound';F('f_stage').value='novo';F('f_temp').value='warm';F('f_moeda').value='USD';F('f_nivel').value='';
   }
   document.getElementById('formOverlay').classList.add('open');
   setTimeout(()=>F('f_nome').focus(),50);
@@ -1262,7 +1285,7 @@ function gather(){
   return {
     nome:V('f_nome'),empresa:V('f_empresa'),telefone:V('f_telefone'),email:V('f_email'),instagram:V('f_instagram'),
     origem:V('f_origem'),campanha:V('f_campanha'),servico:V('f_servico'),stage:V('f_stage'),temp:V('f_temp'),
-    valor:vraw===''?null:Number(vraw),
+    valor:vraw===''?null:Number(vraw),moeda:V('f_moeda')==='BRL'?'BRL':'USD',nivel:V('f_nivel')||null,
     followup:V('f_followup')||null,reuniao:V('f_reuniao')||null,resp:V('f_resp'),notas:V('f_notas'),
   };
 }
@@ -1271,9 +1294,14 @@ async function saveLead(){
   if(!data.nome){toast('Informe o nome do contato',true);document.getElementById('f_nome').focus();return}
   const btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Salvando...';
   if(editingId){
+    const old=state.leads.find(x=>x.id===editingId);
     const patch={...data,updated_at:nowISO()};
+    const log=[];
+    if((old.nivel||null)!==data.nivel)log.push({t:`Nível: ${old.nivel?'Lead '+old.nivel:'—'} → ${data.nivel?'Lead '+data.nivel:'—'}`,at:Date.now()});
+    if(Number(old.valor||0)!==Number(data.valor||0)||leadMoeda(old)!==data.moeda)log.push({t:`Valor: ${old.valor?leadValor(old):'—'} → ${data.valor?valorMoeda(data.valor,data.moeda):'—'}`,at:Date.now()});
+    if(log.length)patch.activity=[...log,...(old.activity||[])];
     const ok=await dbUpdate(editingId,patch);
-    if(ok){const l=state.leads.find(x=>x.id===editingId);Object.assign(l,patch);}
+    if(ok){Object.assign(old,patch);}
     btn.disabled=false;btn.textContent='Salvar';
     if(!ok)return;
     closeForm();render();toast('Lead atualizado ✓');
@@ -1668,7 +1696,7 @@ function leadParaCliente(leadId){
   closeDetail();
   openCliente(null,{nome:l.nome,empresa:l.empresa,telefone:l.telefone,email:l.email,resp:l.resp,canal,
     servicos:SERVICOS.filter(s=>(l.servico||'').toLowerCase().includes(s.toLowerCase().split(' ')[0])),
-    lead_id:String(l.id),data_inicio:ymd(new Date())});
+    moeda:leadMoeda(l),lead_id:String(l.id),data_inicio:ymd(new Date())});
 }
 function cliGather(){
   const V=id=>document.getElementById(id).value.trim();
