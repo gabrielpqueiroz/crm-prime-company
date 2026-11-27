@@ -188,6 +188,24 @@ tbody tr:hover{background:var(--paper)}
 .filters select{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 11px;color:var(--ink);outline:none;cursor:pointer}
 .filters select:focus{border-color:var(--gold)}
 
+/* ============ PLANILHA (pipeline em linhas) ============ */
+.pipe-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.pipe-bar .filters{margin-bottom:0}
+.pipe-bar .pb-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pipe-bar .pb-lbl{font-size:12px;color:var(--ink-soft);font-weight:600}
+.sheet-wrap{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto;max-height:calc(100vh - 230px)}
+.sheet{width:100%;border-collapse:separate;border-spacing:0;min-width:1180px}
+.sheet th{position:sticky;top:0;z-index:2;padding:10px 12px;font-size:10.5px;background:var(--paper);border-bottom:1px solid var(--line)}
+.sheet td{padding:8px 12px;font-size:13px;border-bottom:1px solid var(--line);border-right:1px solid #f1ebe3;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.sheet td:last-child{border-right:none}
+.sheet tbody tr:nth-child(even){background:#fcfaf7}
+.sheet tbody tr:hover{background:var(--paper-2)}
+.sheet .n-col{color:var(--ink-soft);font-size:11.5px;text-align:right;width:36px}
+.sheet .dt{font-weight:600}
+.sheet .dt small{display:block;font-weight:500;color:var(--ink-soft);font-size:11px}
+.sheet .new{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:800;letter-spacing:.4px;color:#fff;background:var(--gold);padding:1px 6px;border-radius:5px;vertical-align:middle}
+.sheet .muted{color:var(--ink-soft)}
+
 /* ============ AGENDA ============ */
 .agenda-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .fu-item{display:flex;gap:13px;padding:14px 0;border-bottom:1px solid var(--line);align-items:center}
@@ -695,6 +713,9 @@ let currentView='dashboard';
 let editingId=null, detailId=null;
 let sortCol='updated_at', sortDir=-1;
 let filterStage='', filterOrigem='', filterNivel='';
+/* Pipeline em quadro (kanban) ou planilha; a escolha fica salva no navegador. */
+let pipeMode=(()=>{try{return localStorage.getItem('pipeMode')==='planilha'?'planilha':'quadro'}catch(e){return 'quadro'}})();
+let plSortCol='created_at', plSortDir=-1, plStage='', plNivel='';
 let agendaMode='mes';
 let agendaRef=new Date(); agendaRef.setHours(0,0,0,0);
 
@@ -866,7 +887,11 @@ function render(){
   opRenderPendente=false;
   const c=document.getElementById('content');
   if(currentView==='dashboard')c.innerHTML=viewDashboard();
-  else if(currentView==='pipeline'){c.innerHTML=viewPipeline();wireDnD();}
+  else if(currentView==='pipeline'){
+    document.getElementById('pageSub').textContent=pipeMode==='planilha'?'Todos os leads em linhas, os mais recentes em cima':TITLES.pipeline[1];
+    if(pipeMode==='planilha')c.innerHTML=pipeToggle()+viewPlanilha();
+    else{c.innerHTML=pipeToggle()+viewPipeline();wireDnD();}
+  }
   else if(currentView==='leads')c.innerHTML=viewLeads();
   else if(currentView==='clientes')c.innerHTML=viewClientes();
   else if(currentView==='operacional')c.innerHTML=viewOperacional();
@@ -1005,6 +1030,97 @@ function wireDnD(){
       }
     });
   });
+}
+
+/* ---------- PLANILHA ---------- */
+function setPipeMode(m){pipeMode=m;try{localStorage.setItem('pipeMode',m)}catch(e){}render()}
+function pipeToggle(){
+  const extra=pipeMode==='planilha'?planilhaControles():'';
+  return `<div class="pipe-bar">
+    <div class="seg"><button class="${pipeMode==='quadro'?'on':''}" onclick="setPipeMode('quadro')">▦ Quadro</button><button class="${pipeMode==='planilha'?'on':''}" onclick="setPipeMode('planilha')">☰ Planilha</button></div>
+    ${extra}
+  </div>`;
+}
+function plOrdenar(col){
+  if(plSortCol===col)plSortDir*=-1;
+  else{plSortCol=col;plSortDir=(col==='created_at'||col==='updated_at'||col==='valor')?-1:1}
+  render();
+}
+function planilhaControles(){
+  const atalho=plSortCol==='created_at'&&plSortDir===-1?'recentes':plSortCol==='nivel'&&plSortDir===1?'nivel':'';
+  return `<div class="filters">
+      <select onchange="plStage=this.value;render()">
+        <option value="">Todas as etapas</option>
+        ${STAGES.map(s=>`<option value="${s.id}" ${plStage===s.id?'selected':''}>${s.name}</option>`).join('')}
+      </select>
+      <select onchange="plNivel=this.value;render()">
+        <option value="">Todos os níveis</option>
+        ${NIVEIS.map(n=>`<option value="${n}" ${plNivel===n?'selected':''}>Lead ${n}</option>`).join('')}
+        <option value="-" ${plNivel==='-'?'selected':''}>Sem nível</option>
+      </select>
+    </div>
+    <div class="pb-right"><span class="pb-lbl">Ordenar:</span>
+      <div class="seg">
+        <button class="${atalho==='recentes'?'on':''}" onclick="plSortCol='created_at';plSortDir=-1;render()">Mais recentes</button>
+        <button class="${atalho==='nivel'?'on':''}" onclick="plSortCol='nivel';plSortDir=1;render()">Nível A → D</button>
+      </div>
+    </div>`;
+}
+function viewPlanilha(){
+  let L=filtered();
+  if(!state.leads.length)return emptyState('Nenhum lead cadastrado','Adicione seu primeiro lead no botão “Novo Lead”.');
+  if(plStage)L=L.filter(l=>l.stage===plStage);
+  if(plNivel)L=L.filter(l=>plNivel==='-'?!NIVEIS.includes(l.nivel):l.nivel===plNivel);
+  const nivelRank=l=>NIVEIS.includes(l.nivel)?NIVEIS.indexOf(l.nivel):9;
+  const stageRank=l=>STAGES.findIndex(s=>s.id===l.stage);
+  const tempRank={hot:0,warm:1,cold:2};
+  const chave=(l)=>{
+    switch(plSortCol){
+      case 'created_at':return ts(l.created_at);
+      case 'updated_at':return ts(l.updated_at);
+      case 'valor':return leadUSD(l);
+      case 'nivel':return nivelRank(l);
+      case 'stage':return stageRank(l);
+      case 'temp':return tempRank[l.temp||'warm'];
+      case 'followup':return l.followup?ts(l.followup):Infinity;
+      default:return (l[plSortCol]||'').toString().toLowerCase();
+    }
+  };
+  /* Empate (ex.: vários Lead A) desempata pelo mais recente. */
+  L=L.slice().sort((a,b)=>{const va=chave(a),vb=chave(b);
+    if(va<vb)return -plSortDir;if(va>vb)return plSortDir;return ts(b.created_at)-ts(a.created_at)});
+  const head=(c,t)=>`<th onclick="plOrdenar('${c}')">${t} ${plSortCol===c?(plSortDir>0?'↑':'↓'):''}</th>`;
+  const dataCelula=iso=>{if(!iso)return '—';const d=new Date(iso);
+    const novo=(Date.now()-d.getTime())<86400000*2;
+    return `${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})}${novo?'<span class="new">NOVO</span>':''}<small>${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small>`};
+  return `<div class="sheet-wrap"><table class="sheet">
+    <thead><tr>
+      <th class="n-col">#</th>
+      ${head('created_at','Criado em')}${head('nivel','Nível')}${head('nome','Lead')}${head('empresa','Empresa')}
+      ${head('stage','Etapa')}${head('temp','Temp.')}${head('valor','Valor')}${head('origem','Origem')}
+      ${head('servico','Serviço')}<th>Telefone</th><th>E-mail</th>${head('resp','Responsável')}${head('followup','Follow-up')}
+    </tr></thead><tbody>
+    ${L.length?L.map((l,i)=>{
+      const s=stageOf(l.stage);const fu=l.followup?daysUntil(l.followup):null;
+      const late=fu!==null&&fu<=0&&l.stage!=='fechado'&&l.stage!=='perdido';
+      return `<tr onclick="openDetail('${l.id}')">
+        <td class="n-col">${i+1}</td>
+        <td class="dt">${dataCelula(l.created_at)}</td>
+        <td>${nivelBadge(l)||'<span class="muted">—</span>'}</td>
+        <td style="font-weight:600">${esc(l.nome)}</td>
+        <td class="muted">${esc(l.empresa)||'—'}</td>
+        <td><span class="pill" style="background:${s.color}1a;color:${s.color}"><span class="p-dot" style="background:${s.color}"></span>${s.name}</span></td>
+        <td title="${l.temp==='hot'?'Quente':l.temp==='cold'?'Frio':'Morno'}">${TEMP[l.temp||'warm']}</td>
+        <td style="font-weight:600">${l.valor?leadValor(l):'<span class="muted">—</span>'}</td>
+        <td class="muted">${esc(l.origem)||'—'}</td>
+        <td class="muted" title="${esc(l.servico)}">${esc(l.servico)||'—'}</td>
+        <td class="muted">${esc(l.telefone)||'—'}</td>
+        <td class="muted" title="${esc(l.email)}">${esc(l.email)||'—'}</td>
+        <td class="muted">${esc(l.resp)||'—'}</td>
+        <td>${l.followup?`<span style="${late?'color:var(--red);font-weight:700':''}">${new Date(l.followup+'T00:00').toLocaleDateString('pt-BR')}</span>`:'<span class="muted">—</span>'}</td>
+      </tr>`}).join(''):`<tr><td colspan="14" style="text-align:center;color:var(--ink-soft);padding:28px">Nenhum lead com esses filtros.</td></tr>`}
+    </tbody></table></div>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:8px">${L.length} lead(s) · clique numa linha para abrir · clique no título da coluna para ordenar</div>`;
 }
 
 /* ---------- LEADS TABLE ---------- */
@@ -1361,7 +1477,6 @@ function pagandoEm(c,iso){
   return !(c.data_cancelamento&&c.data_cancelamento<=iso);
 }
 function proximoVencimento(dia){
-  const hoje=new Date();hoje.setHours(0,0,0,0);
   const noMes=(y,m)=>new Date(y,m,Math.min(dia,new Date(y,m+1,0).getDate()));
   let d=noMes(hoje.getFullYear(),hoje.getMonth());
   if(d<hoje)d=noMes(hoje.getFullYear(),hoje.getMonth()+1);
