@@ -2139,7 +2139,9 @@ let bdrSel='', bdrEditId=null, bdrRelId=null, bdrRelDono=null, bdrReloadTimer=nu
 function isBdr(){return !!me&&me.papel==='bdr'}
 function bdrStage(id){return BDR_STAGES.find(s=>s.id===id)||BDR_STAGES[0]}
 function bdrNome(uid){const p=state.bdr.perfis.find(x=>x.user_id===uid);return p?p.nome:'—'}
-function bdrEquipe(){return state.bdr.perfis.filter(p=>p.papel==='bdr').sort((a,b)=>(b.ativo-a.ativo)||a.nome.localeCompare(b.nome))}
+/* Quem tem CRM de BDR: os BDRs e os admins que também prospectam. */
+function prospecta(p){return p.papel==='bdr'||!!p.prospecta}
+function bdrEquipe(){return state.bdr.perfis.filter(prospecta).sort((a,b)=>(b.ativo-a.ativo)||a.nome.localeCompare(b.nome))}
 function bdrAtivosDe(uid){return state.bdr.leads.filter(l=>l.bdr_id===uid&&!BDR_FIM.includes(l.stage))}
 function bdrNorm(x){return {...x,activity:Array.isArray(x.activity)?x.activity:[]}}
 /* timestamptz → valor do <input type="datetime-local"> no fuso do navegador */
@@ -2203,7 +2205,7 @@ function viewBdr(){
   const eq=bdrEquipe();
   const bar=`<div class="bdr-bar"><div class="seg">
       <button class="${!bdrSel?'on':''}" onclick="bdrAbrir('')">Visão geral</button>
-      ${eq.filter(p=>p.ativo||p.user_id===bdrSel).map(p=>`<button class="${bdrSel===p.user_id?'on':''}" onclick="bdrAbrir('${p.user_id}')">${esc(p.nome)}<span class="seg-n">${bdrAtivosDe(p.user_id).length}</span></button>`).join('')}
+      ${eq.filter(p=>p.ativo||p.user_id===bdrSel).map(p=>`<button class="${bdrSel===p.user_id?'on':''}" onclick="bdrAbrir('${p.user_id}')">${esc(p.nome)}${me&&p.user_id===me.user_id?' (você)':''}<span class="seg-n">${bdrAtivosDe(p.user_id).length}</span></button>`).join('')}
     </div>
     <button class="btn ghost sm" style="margin-left:auto" onclick="openEquipe()">👥 Equipe</button></div>`;
   if(!eq.length)return bar+emptyState('Nenhum BDR cadastrado ainda','Clique em “Equipe” para criar o login do primeiro BDR.');
@@ -2493,11 +2495,13 @@ function closeEquipe(){document.getElementById('equipeOverlay').classList.remove
 function renderEquipe(){
   const P=state.bdr.perfis.slice().sort((a,b)=>(a.papel>b.papel?1:a.papel<b.papel?-1:0)||(b.ativo-a.ativo)||a.nome.localeCompare(b.nome));
   document.getElementById('equipeLista').innerHTML=`<div class="table-wrap"><table class="eq-tbl">
-    <thead><tr><th>Nome</th><th>Papel</th><th>Empresas</th><th>Acesso</th></tr></thead>
+    <thead><tr><th>Nome</th><th>Papel</th><th>Prospecta</th><th>Empresas</th><th>Acesso</th></tr></thead>
     <tbody>${P.map(p=>{const eu=me&&p.user_id===me.user_id;return `<tr style="cursor:default">
       <td><b>${esc(p.nome)}</b>${eu?' <span style="color:var(--ink-soft)">(você)</span>':''}<div class="t-comp">${esc(p.email||'')}</div></td>
       <td><select ${eu?'disabled':''} onchange="equipeSet('${p.user_id}',{papel:this.value})"><option value="bdr" ${p.papel==='bdr'?'selected':''}>BDR</option><option value="admin" ${p.papel==='admin'?'selected':''}>Admin</option></select></td>
-      <td>${p.papel==='bdr'?state.bdr.leads.filter(l=>l.bdr_id===p.user_id).length:'—'}</td>
+      <td>${p.papel==='bdr'?'<span style="color:var(--ink-soft)">sim</span>'
+        :`<label class="chk-line" style="padding:0;font-weight:500" title="Admin com CRM de BDR próprio"><input type="checkbox" ${p.prospecta?'checked':''} onchange="equipeSet('${p.user_id}',{prospecta:this.checked})"/> CRM próprio</label>`}</td>
+      <td>${prospecta(p)?state.bdr.leads.filter(l=>l.bdr_id===p.user_id).length:'—'}</td>
       <td>${eu?'<span class="pill" style="background:var(--green-bg);color:var(--green)">Ativo</span>'
         :`<button class="btn ghost sm" onclick="equipeSenha('${p.user_id}')">🔑 Nova senha</button> <button class="btn ghost sm" onclick="equipeSet('${p.user_id}',{ativo:${!p.ativo}})">${p.ativo?'Desativar':'Reativar'}</button>`}
         ${!p.ativo?' <span class="tag-late">inativo</span>':''}</td>
@@ -2506,9 +2510,9 @@ function renderEquipe(){
 async function equipeSet(uid,patch){
   if(patch.ativo===false&&!confirm(`Cortar o acesso de ${bdrNome(uid)}? As empresas dele continuam no CRM.`)){renderEquipe();return}
   const {error}=await sb.from('perfis').update(patch).eq('user_id',uid);
-  if(error){toast('Erro: '+error.message,true);return}
+  if(error){toast(/prospecta/i.test(error.message||'')?'Rode sql/008-admin-prospecta.sql no Supabase primeiro':'Erro: '+error.message,true);renderEquipe();return}
   Object.assign(state.bdr.perfis.find(p=>p.user_id===uid)||{},patch);
-  if(patch.ativo===false&&bdrSel===uid)bdrSel='';
+  if((patch.ativo===false||patch.prospecta===false)&&bdrSel===uid)bdrSel='';
   renderEquipe();render();toast('Equipe atualizada ✓');
 }
 /* Admin define a senha nova na hora (sql/007) — sem depender de e-mail. */
