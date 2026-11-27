@@ -1657,6 +1657,7 @@ function pagandoEm(c,iso){
   return !(c.data_cancelamento&&c.data_cancelamento<=iso);
 }
 function proximoVencimento(dia){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
   const noMes=(y,m)=>new Date(y,m,Math.min(dia,new Date(y,m+1,0).getDate()));
   let d=noMes(hoje.getFullYear(),hoje.getMonth());
   if(d<hoje)d=noMes(hoje.getFullYear(),hoje.getMonth()+1);
