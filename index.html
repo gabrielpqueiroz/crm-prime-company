@@ -405,6 +405,39 @@ tbody tr:hover{background:var(--paper)}
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-thumb{background:#d8ccba;border-radius:8px;border:2px solid var(--paper)}
 .col-body::-webkit-scrollbar-thumb{border-color:var(--paper-2)}
+/* ============ PROSPECÇÃO BDR ============ */
+.bdr-bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bdr-bar .seg{flex-wrap:wrap}
+.bdr-bar .seg button{display:inline-flex;align-items:center;gap:7px}
+.seg-n{font-size:10.5px;font-weight:800;background:var(--paper-2);color:var(--ink-soft);padding:1px 7px;border-radius:10px}
+.seg button.on .seg-n{background:var(--gold);color:var(--coffee-900)}
+.bdr-col{width:256px}
+.bdr-col .col-h{align-items:flex-start}
+.bdr-col .col-h .c-dot{margin-top:4px;flex-shrink:0}
+.bdr-col .col-h .c-name{line-height:1.3;font-size:12.5px;text-transform:uppercase;letter-spacing:.2px}
+.col-add-wrap{padding:0 10px 12px}
+.bdr-quick{width:100%;border:1px solid transparent;background:transparent;border-radius:9px;padding:9px 10px;font-size:13px;color:var(--ink-soft);outline:none;transition:.12s}
+.bdr-quick::placeholder{color:var(--ink-soft);font-weight:600}
+.bdr-quick:hover{background:rgba(255,255,255,.65)}
+.bdr-quick:focus{background:#fff;border-color:var(--gold);color:var(--ink)}
+.col-add{margin:0 10px 12px;padding:9px 10px;text-align:left;border-radius:9px;font-size:13px;color:var(--ink-soft);font-weight:600}
+.col-add:hover{background:rgba(255,255,255,.65);color:var(--ink)}
+.lead-card.aviso{border-left-color:var(--red);cursor:pointer}
+.lead-card.aviso b{font-size:13.5px}
+.lead-card.rel{cursor:pointer;border-left-color:var(--green)}
+.lead-card.rel.folga{border-left-color:var(--line)}
+.rel-nums{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
+.rel-folga{font-size:10px;font-weight:800;background:var(--paper-2);padding:1px 6px;border-radius:5px;color:var(--ink-soft);margin-left:4px;letter-spacing:.4px}
+.bdr-card .lc-foot{flex-wrap:wrap;gap:4px 10px}
+.lc-foot .parado{color:var(--amber);font-weight:700}
+.eq-tbl td,.eq-tbl th{padding:10px 12px}
+.eq-tbl select{border:1px solid var(--line);border-radius:7px;padding:5px 8px;background:#fff}
+.aviso-txt{width:100%;min-height:340px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:inherit;font-size:14px;line-height:1.6;color:var(--ink);outline:none;resize:vertical}
+.aviso-txt:focus{border-color:var(--gold)}
+.aviso-txt[readonly]{background:var(--paper)}
+.chk-line{display:flex;align-items:center;gap:9px;font-weight:600;font-size:13.5px;padding-top:22px;cursor:pointer}
+.chk-line input{width:17px;height:17px;accent-color:var(--coffee-700)}
+.form-note{font-size:12px;color:var(--ink-soft);margin-top:12px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -463,10 +496,15 @@ tbody tr:hover{background:var(--paper)}
       Agenda & Follow-ups
       <span class="badge" id="navFuCount">0</span>
     </button>
+    <button data-view="bdr">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      <span id="navBdrTxt">Prospecção BDR</span>
+      <span class="badge" id="navBdrCount" style="display:none">0</span>
+    </button>
   </nav>
   <div class="sidebar-foot">
     <div class="user-chip" id="userChip"><span class="u-dot"></span><span id="userEmail">—</span></div>
-    <button onclick="exportData()">
+    <button id="btnBackup" onclick="exportData()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Backup (exportar)
     </button>
@@ -491,7 +529,7 @@ tbody tr:hover{background:var(--paper)}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
       Arquivados
     </button>
-    <button class="btn" onclick="currentView==='clientes'||currentView==='operacional'?openCliente():openLead()">
+    <button class="btn" onclick="novoClick()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span id="btnNovoTxt">Novo Lead</span>
     </button>
@@ -588,6 +626,105 @@ tbody tr:hover{background:var(--paper)}
       <button class="btn-del" id="cliDelBtn" onclick="deleteCliente()">Excluir cliente</button>
       <button class="btn ghost" onclick="closeCliente()">Cancelar</button>
       <button class="btn" id="cliSaveBtn" onclick="saveCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BDR: CARD DA EMPRESA -->
+<div class="overlay" id="bdrOverlay">
+  <div class="modal">
+    <div class="modal-h">
+      <h2 id="bdrTitle">Nova empresa</h2>
+      <button class="close" onclick="closeBdrLead()">&times;</button>
+    </div>
+    <div class="modal-b">
+      <div class="contact-row" id="bdrContatos"></div>
+      <div class="form-grid">
+        <div class="fld"><label>Empresa *</label><input id="b_empresa" placeholder="Ex: Titan Ridge Construction"/></div>
+        <div class="fld"><label>Dono(a) / decisor</label><input id="b_contato" placeholder="Nome de quem decide"/></div>
+        <div class="fld"><label>Telefone / WhatsApp</label><input id="b_telefone" placeholder="(407) 555-0100"/></div>
+        <div class="fld"><label>E-mail</label><input id="b_email"/></div>
+        <div class="fld"><label>Instagram</label><input id="b_instagram" placeholder="@empresa"/></div>
+        <div class="fld"><label>Site / Google</label><input id="b_site" placeholder="empresa.com"/></div>
+        <div class="fld"><label>Nicho</label><input id="b_nicho" placeholder="Ex: Cleaning, Roofing"/></div>
+        <div class="fld"><label>Cidade / estado</label><input id="b_cidade" placeholder="Ex: Orlando, FL"/></div>
+        <div class="fld"><label>Etapa</label><select id="b_stage"></select></div>
+        <div class="fld" id="b_bdrWrap"><label>BDR responsável</label><select id="b_bdr"></select></div>
+        <div class="fld"><label>Reunião agendada para</label><input id="b_reuniao" type="datetime-local"/></div>
+        <div class="fld"><label>Próximo follow-up</label><input id="b_followup" type="date"/></div>
+        <div class="fld"><label>Valor da proposta</label><input id="b_valor" type="number" min="0" step="0.01" placeholder="0"/></div>
+        <div class="fld"><label>Moeda</label><select id="b_moeda"><option value="USD">US$ · dólar</option><option value="BRL">R$ · real</option></select></div>
+        <div class="fld full"><label>Observações</label><textarea id="b_notas" placeholder="Como foi a abordagem, objeções, quem atendeu..."></textarea></div>
+      </div>
+      <div id="bdrHist" style="margin-top:24px"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn-del" id="bdrDelBtn" onclick="deleteBdrLead()">Excluir</button>
+      <button class="btn ghost" onclick="closeBdrLead()">Cancelar</button>
+      <button class="btn" id="bdrSaveBtn" onclick="saveBdrLead()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BDR: RELATÓRIO DIÁRIO -->
+<div class="overlay" id="relOverlay">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-h">
+      <h2 id="relTitle">Relatório diário</h2>
+      <button class="close" onclick="closeRel()">&times;</button>
+    </div>
+    <div class="modal-b">
+      <div class="form-grid">
+        <div class="fld"><label>Dia</label><input id="r_dia" type="date" onchange="relDiaMudou()"/></div>
+        <label class="chk-line"><input type="checkbox" id="r_folga" onchange="relFolgaUI()"/> Folga neste dia</label>
+        <div class="fld r-num"><label>Empresas captadas</label><input id="r_captadas" type="number" min="0"/></div>
+        <div class="fld r-num"><label>Abordagens feitas</label><input id="r_abordagens" type="number" min="0"/></div>
+        <div class="fld r-num"><label>Respostas / contato do dono</label><input id="r_respostas" type="number" min="0"/></div>
+        <div class="fld r-num"><label>Reuniões agendadas</label><input id="r_reunioes" type="number" min="0"/></div>
+        <div class="fld full"><label>Como foi o dia</label><textarea id="r_obs" placeholder="Dificuldades, objeções que mais apareceram, o que funcionou..."></textarea></div>
+      </div>
+      <div class="form-note" id="relNote">Os números já vêm com o que o CRM registrou no dia. Ajuste se precisar. <a href="#" onclick="relRecalcular();return false">↻ Recalcular</a></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn-del" id="relDelBtn" onclick="deleteRel()">Excluir</button>
+      <button class="btn ghost" onclick="closeRel()">Cancelar</button>
+      <button class="btn" id="relSaveBtn" onclick="saveRel()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BDR: LEIA COM ATENÇÃO -->
+<div class="overlay" id="avisoOverlay">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-h">
+      <h2>⚠️ Leia com atenção</h2>
+      <button class="close" onclick="closeAviso()">&times;</button>
+    </div>
+    <div class="modal-b"><textarea id="avisoTxt" class="aviso-txt" placeholder="Script de abordagem, regras do dia 01/02/03, metas, o que fazer quando o dono responder..."></textarea></div>
+    <div class="modal-f" id="avisoFoot">
+      <button class="btn ghost" style="margin-left:auto" onclick="closeAviso()">Fechar</button>
+      <button class="btn" id="avisoSaveBtn" onclick="saveAviso()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BDR: EQUIPE (admin) -->
+<div class="overlay" id="equipeOverlay">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-h">
+      <h2>Equipe</h2>
+      <button class="close" onclick="closeEquipe()">&times;</button>
+    </div>
+    <div class="modal-b">
+      <div id="equipeLista"></div>
+      <p class="detail-section-t" style="margin-top:26px">Criar login de BDR</p>
+      <div class="form-grid">
+        <div class="fld"><label>Nome *</label><input id="e_nome" placeholder="Ex: Ana Paula"/></div>
+        <div class="fld"><label>E-mail *</label><input id="e_email" type="email" placeholder="ana@email.com"/></div>
+        <div class="fld"><label>Senha inicial *</label><input id="e_senha" type="text" placeholder="mínimo 6 caracteres"/></div>
+        <div class="fld" style="justify-content:flex-end"><button class="btn" id="e_btn" onclick="criarBdr()">Criar login</button></div>
+      </div>
+      <div class="form-note">O BDR entra no mesmo endereço do CRM com esse e-mail e senha, e só enxerga o CRM dele. Desativar corta o acesso na hora e mantém as empresas dele (você pode transferir cada card para outro BDR).</div>
     </div>
   </div>
 </div>
@@ -708,7 +845,9 @@ function leadUSD(l){const v=Number(l.valor)||0;return leadMoeda(l)==='USD'?v:v/c
 function somaUSD(arr){return arr.reduce((a,l)=>a+leadUSD(l),0)}
 function nivelBadge(l){return NIVEIS.includes(l.nivel)?`<span class="lv lv-${l.nivel}" title="Lead ${l.nivel}">${l.nivel}</span>`:''}
 
-let state={leads:[],clientes:[],opChecks:{},showArquivados:false};
+let state={leads:[],clientes:[],opChecks:{},showArquivados:false,
+  bdr:{leads:[],rels:[],perfis:[],instrucoes:'',semTabela:false}};
+let me=null; /* perfil logado: {user_id,nome,papel:'admin'|'bdr'} */
 let currentView='dashboard';
 let editingId=null, detailId=null;
 let sortCol='updated_at', sortDir=-1;
@@ -760,10 +899,28 @@ async function onLogin(session){
   document.getElementById('userEmail').textContent=session.user.email;
   document.getElementById('loginScreen').classList.add('hide');
   document.getElementById('boot').classList.remove('hide');
-  await Promise.all([loadLeads(),loadClientes(),loadOpChecks(opHoje())]);
+  await loadPerfil(session.user);
+  /* Login sem perfil (ou desativado): não entra em nada. */
+  if(!me){
+    await sb.auth.signOut();
+    document.getElementById('boot').classList.add('hide');
+    showLogin();
+    document.getElementById('loginErr').textContent='Este login não tem acesso ao CRM. Fale com o administrador.';
+    return;
+  }
+  applyRoleUI();
+  /* BDR carrega só o CRM dele — o banco também bloqueia o resto (sql/006). */
+  if(isBdr()){
+    await loadBdr();
+    document.getElementById('boot').classList.add('hide');
+    render();subscribeBdr();
+    return;
+  }
+  await Promise.all([loadLeads(),loadClientes(),loadOpChecks(opHoje()),loadBdr()]);
   document.getElementById('boot').classList.add('hide');
   render();
   subscribeRealtime();
+  subscribeBdr();
   opLogado=true;
   gcalBootstrap();
 }
@@ -848,21 +1005,35 @@ const TITLES={
   clientes:['Clientes','Carteira ativa, recorrência e churn'],
   operacional:['Operacional','Check diário das campanhas dos clientes ativos'],
   agenda:['Agenda & Follow-ups','O que precisa de atenção agora'],
+  bdr:['Prospecção BDR','O CRM de cada BDR, separado do pipeline principal'],
 };
+function goView(v){
+  currentView=v;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
+  const t=v==='bdr'&&isBdr()?['Meu CRM','Suas empresas em prospecção']:TITLES[v];
+  document.getElementById('pageTitle').textContent=t[0];
+  document.getElementById('pageSub').textContent=t[1];
+  const cli=v==='clientes'||v==='operacional';
+  document.getElementById('btnNovoTxt').textContent=v==='bdr'?'Nova empresa':cli?'Novo Cliente':'Novo Lead';
+  document.getElementById('globalSearch').placeholder=v==='bdr'?'Buscar empresa...':cli?'Buscar cliente...':'Buscar lead...';
+  document.getElementById('btnArquivados').classList.toggle('hide',cli||v==='bdr');
+  render();
+  if(v==='operacional')opGarantirDia();
+}
 document.getElementById('nav').addEventListener('click',e=>{
   const b=e.target.closest('button[data-view]');if(!b)return;
-  currentView=b.dataset.view;
-  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x===b));
-  document.getElementById('pageTitle').textContent=TITLES[currentView][0];
-  document.getElementById('pageSub').textContent=TITLES[currentView][1];
-  const cli=currentView==='clientes'||currentView==='operacional';
-  document.getElementById('btnNovoTxt').textContent=cli?'Novo Cliente':'Novo Lead';
-  document.getElementById('globalSearch').placeholder=cli?'Buscar cliente...':'Buscar lead...';
-  document.getElementById('btnArquivados').classList.toggle('hide',cli);
-  render();
-  if(currentView==='operacional')opGarantirDia();
+  goView(b.dataset.view);
 });
+function novoClick(){
+  if(currentView==='bdr')return openBdrLead(null,'captadas');
+  if(currentView==='clientes'||currentView==='operacional')return openCliente();
+  openLead();
+}
 function updateBadges(){
+  const bb=document.getElementById('navBdrCount');
+  const nb=state.bdr.leads.filter(l=>(!isBdr()||l.bdr_id===me.user_id)&&l.stage==='reuniao').length;
+  bb.textContent=nb;bb.style.display=nb?'':'none';bb.title='Reuniões agendadas';
+  if(isBdr())return;
   const active=state.leads.filter(l=>l.stage!=='fechado'&&l.stage!=='perdido').length;
   document.getElementById('navPipeCount').textContent=active;
   const fu=state.leads.filter(l=>l.followup&&l.stage!=='fechado'&&l.stage!=='perdido'&&daysUntil(l.followup)<=0).length;
@@ -896,6 +1067,15 @@ function render(){
   else if(currentView==='clientes')c.innerHTML=viewClientes();
   else if(currentView==='operacional')c.innerHTML=viewOperacional();
   else if(currentView==='agenda')c.innerHTML=viewAgenda();
+  else if(currentView==='bdr'){
+    /* Realtime redesenha o quadro: guarda a rolagem lateral e o que
+       estava sendo digitado no "Adicionar empresa". */
+    const brd=document.querySelector('.bdr-board'),sl=brd?brd.scrollLeft:0;
+    const a=document.activeElement,keep=a&&a.classList.contains('bdr-quick')?{st:a.dataset.stage,v:a.value}:null;
+    c.innerHTML=viewBdr();wireBdrDnD();
+    const nb=document.querySelector('.bdr-board');if(nb)nb.scrollLeft=sl;
+    if(keep){const i=document.querySelector(`.bdr-quick[data-stage="${keep.st}"]`);if(i){i.value=keep.v;i.focus()}}
+  }
 }
 function filtered(){
   const q=(document.getElementById('globalSearch').value||'').toLowerCase().trim();
@@ -1936,6 +2116,425 @@ async function deleteFile(id,path,e){
   if(detailId===id)openDetail(id,true);render();toast('Arquivo removido');
 }
 
+/* ===================== PROSPECÇÃO BDR =====================
+   Um CRM por BDR, separado do pipeline principal (tabelas bdr_*, sql/006).
+   BDR só vê o dele; admin vê a visão geral e abre o quadro de cada um. */
+const BDR_STAGES=[
+  {id:'captadas',        name:'Empresas captadas',                color:'#7159a0'},
+  {id:'dia1',            name:'Abordagem · Dia 01',               color:'#5b7a96'},
+  {id:'dia2',            name:'Abordagem · Dia 02',               color:'#4f6d88'},
+  {id:'dia3',            name:'Abordagem · Dia 03',               color:'#43607a'},
+  {id:'sem_negocio',     name:'Sem negócio',                      color:'#9a8f84'},
+  {id:'aguardando_dono', name:'Aguardando contato com o dono(a)', color:'#c69749'},
+  {id:'dono_recebido',   name:'Contato do dono(a) recebido',      color:'#b5893f'},
+  {id:'remarcar',        name:'⚠️ Remarcar reunião',               color:'#b4524a'},
+  {id:'reuniao',         name:'Reunião agendada',                 color:'#c2a063'},
+  {id:'proposta',        name:'Proposta feita',                   color:'#8a6d3b'},
+  {id:'fechamento',      name:'Processo de fechamento',           color:'#6f8f5f'},
+  {id:'venda',           name:'Venda feita ✅',                    color:'#5d8a5e'},
+];
+const BDR_FIM=['sem_negocio','venda'];
+let bdrSel='', bdrEditId=null, bdrRelId=null, bdrRelDono=null, bdrReloadTimer=null;
+
+function isBdr(){return !!me&&me.papel==='bdr'}
+function bdrStage(id){return BDR_STAGES.find(s=>s.id===id)||BDR_STAGES[0]}
+function bdrNome(uid){const p=state.bdr.perfis.find(x=>x.user_id===uid);return p?p.nome:'—'}
+function bdrEquipe(){return state.bdr.perfis.filter(p=>p.papel==='bdr').sort((a,b)=>(b.ativo-a.ativo)||a.nome.localeCompare(b.nome))}
+function bdrAtivosDe(uid){return state.bdr.leads.filter(l=>l.bdr_id===uid&&!BDR_FIM.includes(l.stage))}
+function bdrNorm(x){return {...x,activity:Array.isArray(x.activity)?x.activity:[]}}
+/* timestamptz → valor do <input type="datetime-local"> no fuso do navegador */
+function isoParaLocal(iso){if(!iso)return '';const d=new Date(iso);return localYMD(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function waLink(tel){let d=(tel||'').replace(/\D/g,'');if(d.length===10)d='1'+d;return 'https://wa.me/'+d}
+
+async function loadPerfil(user){
+  const {data,error}=await sb.from('perfis').select('*').eq('user_id',user.id).maybeSingle();
+  /* Migração 006 ainda não rodada: o CRM segue exatamente como antes. */
+  if(error){state.bdr.semTabela=true;me={user_id:user.id,nome:user.email,papel:'admin',legado:true};return}
+  me=data&&data.ativo?data:null;
+}
+function applyRoleUI(){
+  const bdr=isBdr();
+  document.querySelectorAll('#nav button[data-view]').forEach(b=>b.classList.toggle('hide',bdr&&b.dataset.view!=='bdr'));
+  document.getElementById('btnBackup').classList.toggle('hide',bdr);
+  document.getElementById('navBdrTxt').textContent=bdr?'Meu CRM':'Prospecção BDR';
+  if(me&&me.nome&&!me.legado)document.getElementById('userEmail').textContent=me.nome+(bdr?' · BDR':' · Admin');
+  if(bdr)goView('bdr');
+}
+async function loadBdr(){
+  if(state.bdr.semTabela)return;
+  const [l,r,p,c]=await Promise.all([
+    sb.from('bdr_leads').select('*').order('updated_at',{ascending:false}),
+    sb.from('bdr_relatorios').select('*').order('dia',{ascending:false}).limit(2000),
+    sb.from('perfis').select('*'),
+    sb.from('bdr_config').select('valor').eq('chave','instrucoes').maybeSingle(),
+  ]);
+  if(l.error){
+    if(/bdr_leads|relation|schema/i.test(l.error.message||''))state.bdr.semTabela=true;
+    else toast('Erro ao carregar prospecção: '+l.error.message,true);
+    return;
+  }
+  state.bdr.leads=(l.data||[]).map(bdrNorm);
+  state.bdr.rels=r.data||[];
+  state.bdr.perfis=p.data||[];
+  state.bdr.instrucoes=(c.data&&c.data.valor)||'';
+}
+function subscribeBdr(){
+  if(state.bdr.semTabela)return;
+  const recarregar=()=>{clearTimeout(bdrReloadTimer);bdrReloadTimer=setTimeout(async()=>{
+    await loadBdr();render();
+    const l=bdrEditId&&state.bdr.leads.find(x=>x.id===bdrEditId);
+    if(l&&document.getElementById('bdrOverlay').classList.contains('open'))bdrHist(l);
+  },400)};
+  try{
+    sb.channel('bdr-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'bdr_leads'},recarregar)
+      .on('postgres_changes',{event:'*',schema:'public',table:'bdr_relatorios'},recarregar)
+      .subscribe();
+  }catch(e){/* realtime opcional */}
+}
+
+/* ---------- telas ---------- */
+function bdrAbrir(uid){bdrSel=uid;const b=document.querySelector('.bdr-board');if(b)b.scrollLeft=0;render()}
+function viewBdr(){
+  if(state.bdr.semTabela)return `<div class="setup-box">
+    <h3 style="font-size:22px;margin-bottom:8px">Falta um passo no banco</h3>
+    Rode <code>sql/006-bdr.sql</code> no Supabase → SQL Editor → New query → Run. Ele cria os perfis (vocês dois como admin), as tabelas dos BDRs e fecha o CRM principal pra quem não é admin. Depois é só recarregar esta página.</div>`;
+  if(isBdr())return bdrBoard(me.user_id);
+  const eq=bdrEquipe();
+  const bar=`<div class="bdr-bar"><div class="seg">
+      <button class="${!bdrSel?'on':''}" onclick="bdrAbrir('')">Visão geral</button>
+      ${eq.filter(p=>p.ativo||p.user_id===bdrSel).map(p=>`<button class="${bdrSel===p.user_id?'on':''}" onclick="bdrAbrir('${p.user_id}')">${esc(p.nome)}<span class="seg-n">${bdrAtivosDe(p.user_id).length}</span></button>`).join('')}
+    </div>
+    <button class="btn ghost sm" style="margin-left:auto" onclick="openEquipe()">👥 Equipe</button></div>`;
+  if(!eq.length)return bar+emptyState('Nenhum BDR cadastrado ainda','Clique em “Equipe” para criar o login do primeiro BDR.');
+  return bar+(bdrSel?bdrBoard(bdrSel):bdrVisaoGeral());
+}
+function bdrVisaoGeral(){
+  const hoje=opHoje();
+  const eq=bdrEquipe().filter(p=>p.ativo);
+  const linhas=eq.map(p=>{
+    const L=state.bdr.leads.filter(l=>l.bdr_id===p.user_id);
+    const n=st=>L.filter(l=>l.stage===st).length;
+    const ult=state.bdr.rels.filter(r=>r.bdr_id===p.user_id).sort((a,b)=>a.dia<b.dia?1:-1)[0];
+    return {p,ativos:L.filter(l=>!BDR_FIM.includes(l.stage)).length,hoje:bdrContagem(p.user_id,hoje),
+      dono:n('aguardando_dono')+n('dono_recebido'),reun:n('reuniao')+n('remarcar'),prop:n('proposta')+n('fechamento'),venda:n('venda'),ult};
+  });
+  const T=k=>linhas.reduce((a,x)=>a+(typeof k==='function'?k(x):x[k]),0);
+  const relTxt=r=>{if(!r)return '<span style="color:var(--ink-soft)">nenhum</span>';const d=diasAte(r.dia);
+    const quando=d===0?'hoje':d===-1?'ontem':fmtData(r.dia);
+    return `${quando}${r.folga?' <span class="rel-folga">FOLGA</span>':''}`+(d<-1?' <span class="tag-late">· atrasado</span>':'')};
+  return `<div class="kpi-grid">
+    <div class="kpi"><div class="k-label">Empresas no funil</div><div class="k-val">${T('ativos')}</div><div class="k-foot">${eq.length} BDR(s) ativo(s)</div></div>
+    <div class="kpi"><div class="k-label">Abordagens hoje</div><div class="k-val">${T(x=>x.hoje.abordagens)}</div><div class="k-foot">${T(x=>x.hoje.captadas)} empresas captadas hoje</div></div>
+    <div class="kpi"><div class="k-label">Reuniões no quadro</div><div class="k-val">${T('reun')}</div><div class="k-foot">${T('dono')} aguardando / com contato do dono</div></div>
+    <div class="kpi"><div class="k-label">Vendas</div><div class="k-val" style="color:var(--green)">${T('venda')}</div><div class="k-foot">${T('prop')} em proposta / fechamento</div></div>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>BDR</th><th>No funil</th><th>Captadas hoje</th><th>Abordagens hoje</th><th>Dono(a)</th><th>Reuniões</th><th>Proposta</th><th>Vendas</th><th>Último relatório</th></tr></thead>
+    <tbody>${linhas.map(x=>`<tr onclick="bdrAbrir('${x.p.user_id}')" style="cursor:pointer">
+      <td style="font-weight:700">${esc(x.p.nome)}<div class="t-comp">${esc(x.p.email||'')}</div></td>
+      <td>${x.ativos}</td><td>${x.hoje.captadas}</td><td>${x.hoje.abordagens}</td><td>${x.dono}</td>
+      <td>${x.reun}</td><td>${x.prop}</td><td style="font-weight:700;color:var(--green)">${x.venda||''}</td><td>${relTxt(x.ult)}</td>
+    </tr>`).join('')}</tbody></table></div>
+  <div style="font-size:12px;color:var(--ink-soft);margin-top:8px">Clique num BDR para abrir o quadro dele.</div>`;
+}
+function fmtDiaCurto(iso){const d=new Date(iso+'T00:00');return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' · '+d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}
+function bdrBoard(uid){
+  const q=(document.getElementById('globalSearch').value||'').toLowerCase().trim();
+  const L=state.bdr.leads.filter(l=>l.bdr_id===uid&&(!q||[l.empresa,l.contato,l.telefone,l.email,l.instagram,l.nicho,l.cidade].some(v=>(v||'').toLowerCase().includes(q))));
+  const rels=state.bdr.rels.filter(r=>r.bdr_id===uid).sort((a,b)=>a.dia<b.dia?1:-1).slice(0,21);
+  const temHoje=rels.some(r=>r.dia===opHoje());
+  const relCol=`<div class="col bdr-col">
+    <div class="col-h"><span class="c-dot" style="background:var(--coffee-600)"></span><span class="c-name">Relatório diário</span><span class="c-count">${rels.length}</span></div>
+    <div class="col-body">
+      <div class="lead-card aviso" onclick="openAviso()"><b>⚠️ LEIA COM ATENÇÃO!</b><div class="lc-comp">${state.bdr.instrucoes?'Script e regras da prospecção':isBdr()?'Ainda sem instruções':'Clique para escrever o script'}</div></div>
+      ${rels.map(r=>`<div class="lead-card rel ${r.folga?'folga':''}" onclick="openRel('${r.id}')">
+        <div class="lc-name">${fmtDiaCurto(r.dia)} ${r.folga?'<span class="rel-folga">FOLGA</span>':'✅'}</div>
+        ${r.folga?'':`<div class="rel-nums">${r.captadas} captadas · ${r.abordagens} abord. · ${r.respostas} resp. · ${r.reunioes} reun.</div>`}
+      </div>`).join('')}
+    </div>
+    <button class="col-add" onclick="openRel(null)">＋ ${temHoje?'Adicionar relatório':'Relatório de hoje'}</button>
+  </div>`;
+  const cols=BDR_STAGES.map(s=>{
+    const items=L.filter(l=>l.stage===s.id).sort((a,b)=>ts(b.stage_at)-ts(a.stage_at));
+    return `<div class="col bdr-col">
+      <div class="col-h"><span class="c-dot" style="background:${s.color}"></span><span class="c-name">${s.name}</span><span class="c-count">${items.length}</span></div>
+      <div class="col-body bdr-body" data-stage="${s.id}">${items.map(bdrCard).join('')}</div>
+      <div class="col-add-wrap"><input class="bdr-quick" data-stage="${s.id}" placeholder="＋ Adicionar empresa" onkeydown="if(event.key==='Enter')bdrQuickAdd(this,'${uid}');if(event.key==='Escape'){this.value='';this.blur()}"/></div>
+    </div>`;
+  }).join('');
+  return `<div class="board bdr-board">${relCol}${cols}</div>`;
+}
+function bdrCard(l){
+  const fim=BDR_FIM.includes(l.stage);
+  const dias=Math.floor((Date.now()-ts(l.stage_at))/86400000);
+  const limite=(l.stage==='captadas'||l.stage.startsWith('dia'))?1:3;
+  const fu=l.followup?daysUntil(l.followup):null;
+  const foot=[];
+  if(l.reuniao&&!fim)foot.push(`<span>📅 ${new Date(l.reuniao).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>`);
+  if(l.followup&&!fim)foot.push(fu<0?`<span class="fu-late">⚑ atrasado ${-fu}d</span>`:fu===0?`<span class="fu-late">⚑ follow-up hoje</span>`:`<span>⚑ em ${fu}d</span>`);
+  if(!fim)foot.push(`<span class="${dias>=limite?'parado':''}" title="Tempo nesta etapa">⏱ ${dias?dias+'d':'hoje'}</span>`);
+  const chips=[l.nicho&&`<span class="chip">${esc(l.nicho)}</span>`,l.cidade&&`<span class="chip">📍 ${esc(l.cidade)}</span>`,l.valor&&`<span class="chip val">${valorMoeda(l.valor,l.moeda)}</span>`].filter(Boolean);
+  return `<div class="lead-card bdr-card" draggable="true" data-id="${l.id}" onclick="openBdrLead('${l.id}')">
+    <div class="lc-name">${esc(l.empresa)}</div>
+    ${l.contato?`<div class="lc-comp">${esc(l.contato)}</div>`:''}
+    ${chips.length?`<div class="lc-meta">${chips.join('')}</div>`:''}
+    ${foot.length?`<div class="lc-foot">${foot.join('')}</div>`:''}
+  </div>`;
+}
+function wireBdrDnD(){
+  let dragId=null;
+  document.querySelectorAll('.bdr-card').forEach(card=>{
+    card.addEventListener('dragstart',()=>{dragId=card.dataset.id;card.classList.add('dragging')});
+    card.addEventListener('dragend',()=>{dragId=null;card.classList.remove('dragging');document.querySelectorAll('.bdr-body').forEach(b=>b.classList.remove('drop'))});
+  });
+  document.querySelectorAll('.bdr-body').forEach(body=>{
+    body.addEventListener('dragover',e=>{if(!dragId)return;e.preventDefault();body.classList.add('drop')});
+    body.addEventListener('dragleave',()=>body.classList.remove('drop'));
+    body.addEventListener('drop',e=>{e.preventDefault();body.classList.remove('drop');if(dragId)bdrSetStage(dragId,body.dataset.stage)});
+  });
+}
+
+/* ---------- cards ---------- */
+async function bdrSetStage(id,st){
+  const l=state.bdr.leads.find(x=>x.id===id);if(!l||l.stage===st)return;
+  const activity=[{t:`${bdrStage(l.stage).name} → ${bdrStage(st).name}`,at:Date.now(),st},...l.activity];
+  const patch={stage:st,stage_at:nowISO(),updated_at:nowISO(),activity};
+  Object.assign(l,patch);render();
+  const {error}=await sb.from('bdr_leads').update(patch).eq('id',id);
+  if(error){toast('Erro ao salvar: '+error.message,true);await loadBdr();render();return}
+  toast(`${l.empresa} → ${bdrStage(st).name}`);
+}
+async function bdrQuickAdd(inp,uid){
+  const empresa=inp.value.trim();if(!empresa)return;
+  const st=inp.dataset.stage;
+  inp.value='';inp.disabled=true;
+  const row={empresa,stage:st,bdr_id:uid,activity:[{t:`Empresa adicionada em "${bdrStage(st).name}"`,at:Date.now(),st}]};
+  const {data,error}=await sb.from('bdr_leads').insert(row).select().single();
+  inp.disabled=false;
+  if(error){toast('Erro ao salvar: '+error.message,true);inp.value=empresa;inp.focus();return}
+  if(!state.bdr.leads.some(x=>x.id===data.id))state.bdr.leads.unshift(bdrNorm(data));
+  inp.focus();render();
+}
+function openBdrLead(id,st){
+  const l=id?state.bdr.leads.find(x=>x.id===id):null;
+  if(id&&!l)return;
+  if(state.bdr.semTabela){toast('Rode sql/006-bdr.sql no Supabase primeiro',true);return}
+  const eq=bdrEquipe();
+  if(!isBdr()&&!eq.length){toast('Cadastre um BDR primeiro em “Equipe”',true);return}
+  bdrEditId=id||null;
+  const F=x=>document.getElementById(x);
+  F('b_stage').innerHTML=BDR_STAGES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  F('b_bdrWrap').classList.toggle('hide',isBdr());
+  if(!isBdr())F('b_bdr').innerHTML=eq.map(p=>`<option value="${p.user_id}">${esc(p.nome)}${p.ativo?'':' (inativo)'}</option>`).join('');
+  const campos=['empresa','contato','telefone','email','instagram','site','nicho','cidade','notas'];
+  campos.forEach(k=>F('b_'+k).value=l?(l[k]||''):'');
+  F('b_stage').value=l?l.stage:(st||'captadas');
+  F('b_reuniao').value=l?isoParaLocal(l.reuniao):'';
+  F('b_followup').value=l?(l.followup||''):'';
+  F('b_valor').value=l&&l.valor!=null?l.valor:'';
+  F('b_moeda').value=l&&l.moeda==='BRL'?'BRL':'USD';
+  if(!isBdr())F('b_bdr').value=l?l.bdr_id:(bdrSel||(eq.find(p=>p.ativo)||eq[0]).user_id);
+  F('bdrTitle').textContent=l?l.empresa:'Nova empresa';
+  F('bdrDelBtn').style.display=l?'':'none';
+  const ct=[];
+  if(l&&l.telefone)ct.push(`<a href="${waLink(l.telefone)}" target="_blank">💬 WhatsApp</a><a href="tel:${esc(l.telefone)}">📞 ${esc(l.telefone)}</a>`);
+  if(l&&l.email)ct.push(`<a href="mailto:${esc(l.email)}">✉️ ${esc(l.email)}</a>`);
+  if(l&&l.instagram)ct.push(`<a href="https://instagram.com/${esc(l.instagram.replace('@',''))}" target="_blank">📷 ${esc(l.instagram)}</a>`);
+  if(l&&l.site)ct.push(`<a href="${/^https?:/i.test(l.site)?esc(l.site):'https://'+esc(l.site)}" target="_blank">🌐 Site</a>`);
+  F('bdrContatos').innerHTML=ct.join('');F('bdrContatos').style.display=ct.length?'':'none';
+  if(l)bdrHist(l);else F('bdrHist').innerHTML='';
+  F('bdrOverlay').classList.add('open');
+  if(!l)setTimeout(()=>F('b_empresa').focus(),50);
+}
+function bdrHist(l){
+  const acts=l.activity.slice().sort((a,b)=>b.at-a.at);
+  document.getElementById('bdrHist').innerHTML=`
+    <p class="detail-section-t">Histórico & anotações${isBdr()?'':` · BDR: ${esc(bdrNome(l.bdr_id))}`}</p>
+    <div class="activity-add">
+      <input id="bdrActInput" placeholder="Registrar ligação, mensagem, retorno..." onkeydown="if(event.key==='Enter')bdrAddNota('${l.id}')"/>
+      <button class="btn sm" onclick="bdrAddNota('${l.id}')">Adicionar</button>
+    </div>
+    ${acts.length?`<div class="timeline">${acts.map(a=>`<div class="tl-item"><div class="tl-txt">${esc(a.t)}</div><div class="tl-time">${new Date(a.at).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div></div>`).join('')}</div>`:'<div style="color:var(--ink-soft);font-size:13px">Sem registros ainda.</div>'}`;
+}
+async function bdrAddNota(id){
+  const inp=document.getElementById('bdrActInput');const t=inp.value.trim();if(!t)return;
+  const l=state.bdr.leads.find(x=>x.id===id);if(!l)return;
+  const activity=[{t,at:Date.now()},...l.activity];
+  l.activity=activity;l.updated_at=nowISO();
+  bdrHist(l);
+  const {error}=await sb.from('bdr_leads').update({activity,updated_at:l.updated_at}).eq('id',id);
+  if(error)toast('Erro ao salvar: '+error.message,true);
+}
+function closeBdrLead(){document.getElementById('bdrOverlay').classList.remove('open');bdrEditId=null}
+async function saveBdrLead(){
+  const V=x=>document.getElementById(x).value.trim();
+  const vraw=V('b_valor'),rraw=V('b_reuniao');
+  const data={empresa:V('b_empresa'),contato:V('b_contato'),telefone:V('b_telefone'),email:V('b_email'),instagram:V('b_instagram'),
+    site:V('b_site'),nicho:V('b_nicho'),cidade:V('b_cidade'),stage:V('b_stage'),notas:V('b_notas'),
+    reuniao:rraw?new Date(rraw).toISOString():null,followup:V('b_followup')||null,
+    valor:vraw===''?null:Number(vraw),moeda:V('b_moeda')==='BRL'?'BRL':'USD'};
+  if(!isBdr())data.bdr_id=V('b_bdr');
+  if(!data.empresa){toast('Informe o nome da empresa',true);document.getElementById('b_empresa').focus();return}
+  const btn=document.getElementById('bdrSaveBtn');btn.disabled=true;btn.textContent='Salvando...';
+  let error;
+  if(bdrEditId){
+    const old=state.bdr.leads.find(x=>x.id===bdrEditId);
+    const patch={...data,updated_at:nowISO()};
+    const log=[];
+    if(old.stage!==data.stage){patch.stage_at=nowISO();log.push({t:`${bdrStage(old.stage).name} → ${bdrStage(data.stage).name}`,at:Date.now(),st:data.stage})}
+    if(data.bdr_id&&data.bdr_id!==old.bdr_id)log.push({t:`Transferida de ${bdrNome(old.bdr_id)} para ${bdrNome(data.bdr_id)}`,at:Date.now()});
+    if(log.length)patch.activity=[...log,...old.activity];
+    ({error}=await sb.from('bdr_leads').update(patch).eq('id',bdrEditId));
+    if(!error)Object.assign(old,patch);
+  }else{
+    const row={...data,activity:[{t:`Empresa adicionada em "${bdrStage(data.stage).name}"`,at:Date.now(),st:data.stage}]};
+    if(isBdr())row.bdr_id=me.user_id;
+    let created;({data:created,error}=await sb.from('bdr_leads').insert(row).select().single());
+    if(!error&&!state.bdr.leads.some(x=>x.id===created.id))state.bdr.leads.unshift(bdrNorm(created));
+  }
+  btn.disabled=false;btn.textContent='Salvar';
+  if(error){toast('Erro ao salvar: '+error.message,true);return}
+  closeBdrLead();render();toast('Salvo ✓');
+}
+async function deleteBdrLead(){
+  if(!bdrEditId||!confirm('Excluir esta empresa do CRM?'))return;
+  const id=bdrEditId;
+  const {error}=await sb.from('bdr_leads').delete().eq('id',id);
+  if(error){toast('Erro ao excluir: '+error.message,true);return}
+  state.bdr.leads=state.bdr.leads.filter(x=>x.id!==id);
+  closeBdrLead();render();toast('Empresa excluída');
+}
+
+/* ---------- relatório diário ---------- */
+/* Conta o que o CRM registrou no dia: cards criados, e movimentos para as
+   etapas de abordagem, de contato com o dono e de reunião. */
+function bdrContagem(uid,dia){
+  const c={captadas:0,abordagens:0,respostas:0,reunioes:0};
+  state.bdr.leads.filter(l=>l.bdr_id===uid).forEach(l=>{
+    if(l.created_at&&localYMD(new Date(l.created_at))===dia)c.captadas++;
+    l.activity.forEach(a=>{
+      if(!a.st||localYMD(new Date(a.at))!==dia)return;
+      if(a.st.startsWith('dia'))c.abordagens++;
+      else if(a.st==='aguardando_dono'||a.st==='dono_recebido')c.respostas++;
+      else if(a.st==='reuniao')c.reunioes++;
+    });
+  });
+  return c;
+}
+function relFolgaUI(){const f=document.getElementById('r_folga').checked;document.querySelectorAll('#relOverlay .r-num').forEach(x=>x.classList.toggle('hide',f));document.getElementById('relNote').classList.toggle('hide',f)}
+function relRecalcular(){
+  const c=bdrContagem(bdrRelDono,document.getElementById('r_dia').value);
+  ['captadas','abordagens','respostas','reunioes'].forEach(k=>document.getElementById('r_'+k).value=c[k]);
+}
+function relDiaMudou(){if(!bdrRelId)relRecalcular()}
+function openRel(id){
+  const r=id?state.bdr.rels.find(x=>x.id===id):null;
+  bdrRelId=r?r.id:null;
+  bdrRelDono=r?r.bdr_id:(isBdr()?me.user_id:bdrSel);
+  const F=x=>document.getElementById(x);
+  F('relTitle').textContent='Relatório diário'+(isBdr()?'':' · '+bdrNome(bdrRelDono));
+  F('r_dia').value=r?r.dia:opHoje();
+  F('r_folga').checked=!!(r&&r.folga);
+  F('r_obs').value=r?(r.obs||''):'';
+  if(r)['captadas','abordagens','respostas','reunioes'].forEach(k=>F('r_'+k).value=r[k]);
+  else relRecalcular();
+  F('relDelBtn').style.display=r?'':'none';
+  relFolgaUI();
+  F('relOverlay').classList.add('open');
+}
+function closeRel(){document.getElementById('relOverlay').classList.remove('open');bdrRelId=null}
+async function saveRel(){
+  const F=x=>document.getElementById(x);
+  const num=k=>Math.max(0,parseInt(F('r_'+k).value,10)||0);
+  const row={bdr_id:bdrRelDono,dia:F('r_dia').value,folga:F('r_folga').checked,
+    captadas:num('captadas'),abordagens:num('abordagens'),respostas:num('respostas'),reunioes:num('reunioes'),
+    obs:F('r_obs').value.trim(),updated_at:nowISO()};
+  if(!row.dia){toast('Escolha o dia',true);return}
+  const outro=state.bdr.rels.find(x=>x.bdr_id===row.bdr_id&&x.dia===row.dia&&x.id!==bdrRelId);
+  if(outro){toast('Já existe relatório desse dia — abra o card dele para editar',true);return}
+  const btn=F('relSaveBtn');btn.disabled=true;
+  const q=bdrRelId?sb.from('bdr_relatorios').update(row).eq('id',bdrRelId).select().single()
+                  :sb.from('bdr_relatorios').insert(row).select().single();
+  const {data,error}=await q;
+  btn.disabled=false;
+  if(error){toast('Erro ao salvar: '+error.message,true);return}
+  state.bdr.rels=[data,...state.bdr.rels.filter(x=>x.id!==data.id)];
+  closeRel();render();toast('Relatório salvo ✓');
+}
+async function deleteRel(){
+  if(!bdrRelId||!confirm('Excluir este relatório?'))return;
+  const id=bdrRelId;
+  const {error}=await sb.from('bdr_relatorios').delete().eq('id',id);
+  if(error){toast('Erro ao excluir: '+error.message,true);return}
+  state.bdr.rels=state.bdr.rels.filter(x=>x.id!==id);
+  closeRel();render();
+}
+
+/* ---------- LEIA COM ATENÇÃO ---------- */
+function openAviso(){
+  const t=document.getElementById('avisoTxt');
+  t.value=state.bdr.instrucoes||(isBdr()?'O administrador ainda não escreveu as instruções.':'');
+  t.readOnly=isBdr();
+  document.getElementById('avisoSaveBtn').classList.toggle('hide',isBdr());
+  document.getElementById('avisoOverlay').classList.add('open');
+}
+function closeAviso(){document.getElementById('avisoOverlay').classList.remove('open')}
+async function saveAviso(){
+  const valor=document.getElementById('avisoTxt').value;
+  const {error}=await sb.from('bdr_config').upsert({chave:'instrucoes',valor,updated_at:nowISO()});
+  if(error){toast('Erro ao salvar: '+error.message,true);return}
+  state.bdr.instrucoes=valor;closeAviso();render();toast('Instruções salvas ✓');
+}
+
+/* ---------- equipe (admin) ---------- */
+function openEquipe(){renderEquipe();document.getElementById('equipeOverlay').classList.add('open')}
+function closeEquipe(){document.getElementById('equipeOverlay').classList.remove('open')}
+function renderEquipe(){
+  const P=state.bdr.perfis.slice().sort((a,b)=>(a.papel>b.papel?1:a.papel<b.papel?-1:0)||(b.ativo-a.ativo)||a.nome.localeCompare(b.nome));
+  document.getElementById('equipeLista').innerHTML=`<div class="table-wrap"><table class="eq-tbl">
+    <thead><tr><th>Nome</th><th>Papel</th><th>Empresas</th><th>Acesso</th></tr></thead>
+    <tbody>${P.map(p=>{const eu=me&&p.user_id===me.user_id;return `<tr style="cursor:default">
+      <td><b>${esc(p.nome)}</b>${eu?' <span style="color:var(--ink-soft)">(você)</span>':''}<div class="t-comp">${esc(p.email||'')}</div></td>
+      <td><select ${eu?'disabled':''} onchange="equipeSet('${p.user_id}',{papel:this.value})"><option value="bdr" ${p.papel==='bdr'?'selected':''}>BDR</option><option value="admin" ${p.papel==='admin'?'selected':''}>Admin</option></select></td>
+      <td>${p.papel==='bdr'?state.bdr.leads.filter(l=>l.bdr_id===p.user_id).length:'—'}</td>
+      <td>${eu?'<span class="pill" style="background:var(--green-bg);color:var(--green)">Ativo</span>'
+        :`<button class="btn ghost sm" onclick="equipeSet('${p.user_id}',{ativo:${!p.ativo}})">${p.ativo?'Desativar':'Reativar'}</button>`}
+        ${!p.ativo?' <span class="tag-late">inativo</span>':''}</td>
+    </tr>`}).join('')}</tbody></table></div>`;
+}
+async function equipeSet(uid,patch){
+  if(patch.ativo===false&&!confirm(`Cortar o acesso de ${bdrNome(uid)}? As empresas dele continuam no CRM.`)){renderEquipe();return}
+  const {error}=await sb.from('perfis').update(patch).eq('user_id',uid);
+  if(error){toast('Erro: '+error.message,true);return}
+  Object.assign(state.bdr.perfis.find(p=>p.user_id===uid)||{},patch);
+  if(patch.ativo===false&&bdrSel===uid)bdrSel='';
+  renderEquipe();render();toast('Equipe atualizada ✓');
+}
+async function criarBdr(){
+  const F=x=>document.getElementById(x);
+  const nome=F('e_nome').value.trim(),email=F('e_email').value.trim().toLowerCase(),senha=F('e_senha').value;
+  if(!nome||!email){toast('Preencha nome e e-mail',true);return}
+  if(senha.length<6){toast('A senha precisa de pelo menos 6 caracteres',true);return}
+  const btn=F('e_btn');btn.disabled=true;btn.textContent='Criando...';
+  /* Cliente separado e sem sessão salva: cria o login do BDR sem
+     derrubar a sessão do admin que está usando o CRM. */
+  const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'prime-bdr-signup'}});
+  const {error:signErr}=await tmp.auth.signUp({email,password:senha});
+  /* Mesmo se o signUp reclamar (e-mail já existe, cadastro desativado),
+     tenta vincular: serve pra login criado à mão no painel do Supabase. */
+  const {error}=await sb.rpc('admin_vincular_perfil',{p_email:email,p_nome:nome,p_papel:'bdr'});
+  btn.disabled=false;btn.textContent='Criar login';
+  if(error){
+    toast(signErr?('Supabase: '+signErr.message+'. Crie o usuário em Authentication → Users → Add user e clique em Criar login de novo.'):('Erro: '+error.message),true);
+    return;
+  }
+  await loadBdr();
+  ['e_nome','e_email','e_senha'].forEach(x=>F(x).value='');
+  renderEquipe();render();
+  toast(`Login de ${nome} criado ✓ — mande o e-mail e a senha para ele(a)`);
+}
+
 /* ---------- UTIL ---------- */
 function emptyState(t,s){return `<div class="empty"><div class="e-ic">☕</div><div class="e-t">${t}</div><div class="e-s">${s}</div></div>`}
 let toastT;
@@ -1948,7 +2547,7 @@ function exportData(){
   toast('Backup exportado ✓');
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeForm();closeDetail();closeCliente()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeForm();closeDetail();closeCliente();closeBdrLead();closeRel();closeAviso();closeEquipe()}});
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
 
 /* ===================== INIT ===================== */
