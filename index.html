@@ -2499,7 +2499,7 @@ function renderEquipe(){
       <td><select ${eu?'disabled':''} onchange="equipeSet('${p.user_id}',{papel:this.value})"><option value="bdr" ${p.papel==='bdr'?'selected':''}>BDR</option><option value="admin" ${p.papel==='admin'?'selected':''}>Admin</option></select></td>
       <td>${p.papel==='bdr'?state.bdr.leads.filter(l=>l.bdr_id===p.user_id).length:'—'}</td>
       <td>${eu?'<span class="pill" style="background:var(--green-bg);color:var(--green)">Ativo</span>'
-        :`<button class="btn ghost sm" onclick="equipeSet('${p.user_id}',{ativo:${!p.ativo}})">${p.ativo?'Desativar':'Reativar'}</button>`}
+        :`<button class="btn ghost sm" onclick="equipeSenha('${p.user_id}')">🔑 Nova senha</button> <button class="btn ghost sm" onclick="equipeSet('${p.user_id}',{ativo:${!p.ativo}})">${p.ativo?'Desativar':'Reativar'}</button>`}
         ${!p.ativo?' <span class="tag-late">inativo</span>':''}</td>
     </tr>`}).join('')}</tbody></table></div>`;
 }
@@ -2510,6 +2510,21 @@ async function equipeSet(uid,patch){
   Object.assign(state.bdr.perfis.find(p=>p.user_id===uid)||{},patch);
   if(patch.ativo===false&&bdrSel===uid)bdrSel='';
   renderEquipe();render();toast('Equipe atualizada ✓');
+}
+/* Admin define a senha nova na hora (sql/007) — sem depender de e-mail. */
+async function equipeSenha(uid){
+  const sugestao=Math.random().toString(36).slice(2,8)+Math.floor(10+Math.random()*90);
+  const s=prompt(`Nova senha para ${bdrNome(uid)} (mínimo 6 caracteres):`,sugestao);
+  if(s===null)return;
+  const senha=s.trim();
+  if(senha.length<6){toast('A senha precisa de pelo menos 6 caracteres',true);return}
+  const {error}=await sb.rpc('admin_resetar_senha',{p_user:uid,p_senha:senha});
+  if(error){
+    toast(/admin_resetar_senha|function|schema/i.test(error.message||'')?'Rode sql/007-resetar-senha.sql no Supabase primeiro':'Erro: '+error.message,true);
+    return;
+  }
+  try{await navigator.clipboard.writeText(senha)}catch(e){}
+  toast(`Senha de ${bdrNome(uid)} alterada para: ${senha} (copiada)`);
 }
 async function criarBdr(){
   const F=x=>document.getElementById(x);
